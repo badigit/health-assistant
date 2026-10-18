@@ -233,7 +233,9 @@ async def list_examinations(
         query = query.where(ExaminationModel.patient_id.in_(patient_ids_query))
 
     query = (
-        query.order_by(ExaminationModel.examination_date.desc())
+        query.order_by(
+            ExaminationModel.examination_date.desc(), ExaminationModel.id.desc()
+        )
         .limit(limit)
         .offset(offset)
     )
