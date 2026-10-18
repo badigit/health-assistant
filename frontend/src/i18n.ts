@@ -5,6 +5,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 // Import translation files
 import commonEn from './locales/en/common.json';
 import commonEl from './locales/el/common.json';
+import commonRu from './locales/ru/common.json';
 
 i18n
   .use(LanguageDetector)
@@ -13,6 +14,7 @@ i18n
     resources: {
       en: { translation: commonEn },
       el: { translation: commonEl },
+      ru: { translation: commonRu },
     },
     fallbackLng: 'en',
     interpolation: {

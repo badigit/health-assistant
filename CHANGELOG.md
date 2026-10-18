@@ -13,12 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Russian interface language for core patient records, biomarkers, examinations, documents, navigation and general settings; untranslated sections fall back to English.
 - Tenant and user biomarker display modes: stored numeric precision without rounding or padded zeros, and optional trailing-zero suppression for fixed precision.
 
 ### Fixed
 - Apply compact appearance settings to biomarker tables, lists and grids, reducing row height, card padding and group spacing.
 - Respect biomarker precision settings in observation result cards; exclude API, FHIR and discovery URLs from the service worker navigation fallback.
 - Activate PWA updates automatically, matching the existing auto-update registration, so open tabs receive new builds.
+
+### Changed
+- Remove the sidebar family promotion, funding and About footer while retaining the Create New action.
 
 ## [v0.8.0] - 2026-09-20
 

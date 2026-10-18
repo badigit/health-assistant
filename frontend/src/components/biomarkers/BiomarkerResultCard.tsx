@@ -60,7 +60,7 @@ export const BiomarkerResultCard: React.FC<BiomarkerResultCardProps> = ({ b }) =
             status,
           )}`}
         >
-          {status}
+          {t(`biomarkers.status.${status.toLowerCase()}`, status)}
         </span>
       </div>
 

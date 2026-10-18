@@ -43,7 +43,7 @@ const CategoryDropdown = ({ activePerspective, activeTab, tabs, setActivePerspec
              activePerspective === 'technical' ? t('biomarkers.perspectives.technical') : 
              t('biomarkers.perspectives.examination')}
           </p>
-          <p className="leading-none text-xs sm:text-sm">{activeTab}</p>
+          <p className="leading-none text-xs sm:text-sm">{activeTab === 'All' ? t('common.all') : activeTab}</p>
         </div>
         <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
@@ -90,7 +90,7 @@ const CategoryDropdown = ({ activePerspective, activeTab, tabs, setActivePerspec
                       activeTab === tab ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'text-gray-600 dark:text-dark-text hover:bg-gray-50 dark:hover:bg-dark-border'
                     }`}
                   >
-                    <span>{tab}</span>
+                    <span>{tab === 'All' ? t('common.all') : tab}</span>
                     {activeTab === tab && <Check className="w-4 h-4" />}
                   </button>
                 ))}
@@ -138,7 +138,7 @@ const FilterMenu = ({ dateRange, setDateRange, viewMode, setViewMode, t }: any) 
                 <div className="grid grid-cols-2 gap-2">
                   {TIME_RANGES.map(range => (
                     <button key={range.id} onClick={() => setDateRange(range.id)} className={`px-4 py-2 text-xs font-bold rounded-xl border transition-all flex items-center justify-between ${dateRange === range.id ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 text-blue-600 dark:text-blue-400' : 'bg-gray-50 dark:bg-dark-bg border-transparent text-gray-500'}`}>
-                      <span>{range.longLabel}</span>
+                      <span>{t(`biomarkers.time_ranges.${range.id}`, range.longLabel)}</span>
                       {dateRange === range.id && <Check className="w-3 h-3" />}
                     </button>
                   ))}

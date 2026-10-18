@@ -225,6 +225,7 @@ SETTINGS_REGISTRY: List[SettingDefinition] = [
         options=[
             SettingEnumOption(value="en", label_key="settings.language_en"),
             SettingEnumOption(value="el", label_key="settings.language_el"),
+            SettingEnumOption(value="ru", label_key="settings.language_ru"),
         ],
         order=10,
     ),

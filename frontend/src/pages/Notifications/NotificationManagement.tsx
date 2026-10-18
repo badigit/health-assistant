@@ -16,7 +16,7 @@ import {
   Inbox as InboxIcon,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { el, enUS } from 'date-fns/locale';
+import { el, enUS, ru } from 'date-fns/locale';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { StickyToolbar } from '../../components/ui/StickyToolbar';
 import {
@@ -41,7 +41,7 @@ const VALID_TABS: Tab[] = ['inbox', 'all', 'rules', 'triggers', 'admin', 'settin
 
 export default function NotificationManagement() {
   const { t, i18n } = useTranslation();
-  const dateLocale = i18n.language === 'el' ? el : enUS;
+  const dateLocale = i18n.language.startsWith('ru') ? ru : i18n.language === 'el' ? el : enUS;
   const navigate = useNavigate();
   const { tab: tabParam } = useParams<{ tab?: string }>();
 

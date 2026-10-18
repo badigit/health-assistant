@@ -1,5 +1,6 @@
 {
   "common": {
+    "all": "All",
     "about": "About",
     "dashboard": "Dashboard",
     "examinations": "Examinations",
@@ -167,6 +168,7 @@
     "clear": "Clear",
     "no_patient_setup_action": "Run setup wizard"
   },
+  "filters": { "fewer": "Fewer", "more": "More", "clear_all": "Clear all", "result_count": "{{shown}} of {{total}}", "active_count": "{{count}} active filters" },
   "nav": {
     "close_sidebar": "Close sidebar",
     "collapse_sidebar": "Collapse Sidebar",
@@ -646,6 +648,11 @@
     }
   },
   "biomarkers": {
+    "time_ranges": {"last-24-hours":"Last 24 Hours","last-7-days":"Last 7 Days","last-30-days":"Last 30 Days","last-90-days":"Last 90 Days","last-12-months":"Last 12 Months","all-time":"All Time"},
+    "facets": {"status":"Status","source_type":"Source type","subcategory":"Subcategory","unit":"Unit","source":"Lab / source","mapped":"Hide unmapped"},
+    "status": {"normal":"Normal","high":"High","low":"Low","abnormal":"Abnormal"},
+    "source_types": {"system":"System","technical":"Technical","examination":"Examination"},
+    "uncategorized": "Uncategorized",
     "title": "Biomarkers",
     "subtitle": "Biomarker trends and longitudinal health patterns",
     "catalog_button": "Biomarker Catalog",
@@ -1779,6 +1786,7 @@
     "subtitle": "Back up data as FHIR Bundles or full archives; restore from a backup file"
   },
   "settings": {
+    "language_ru": "Russian",
     "nav_title": "Settings",
     "nav_profile": "Profile",
     "nav_preferences": "Preferences",

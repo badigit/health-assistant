@@ -310,7 +310,7 @@ export const BiomarkerList = React.memo(({
               </div>
             )}
             <span className={`mt-1 text-[8px] font-black uppercase tracking-tighter ${isHigh ? 'text-red-500' : isLow ? 'text-blue-500' : 'text-gray-300'}`}>
-              {marker.interpretation}
+              {t(`biomarkers.status.${marker.interpretation.toLowerCase()}`, marker.interpretation)}
             </span>
           </div>
         </div>
@@ -453,7 +453,7 @@ export const BiomarkerList = React.memo(({
               <CheckCircle2 className="w-5 h-5 text-green-200 dark:text-green-800/30 mr-2" />
             )}
            <span className={`text-[10px] font-bold uppercase tracking-wider ${isHigh ? 'text-red-600' : isLow ? 'text-blue-600' : 'text-gray-400'}`}>
-              {marker.interpretation}
+              {t(`biomarkers.status.${marker.interpretation.toLowerCase()}`, marker.interpretation)}
            </span>
         </div>
 
@@ -611,7 +611,7 @@ export const BiomarkerList = React.memo(({
                           <CheckCircle2 className="w-4 h-4 text-green-200 dark:text-green-800/30 mr-2" />
                         )}
                         <span className={`text-[10px] font-bold uppercase tracking-wider ${isAbnormal(m.interpretation) ? (m.interpretation.toLowerCase().includes('high') ? 'text-red-600' : 'text-blue-600') : 'text-gray-400'}`}>
-                          {m.interpretation}
+                          {t(`biomarkers.status.${m.interpretation.toLowerCase()}`, m.interpretation)}
                         </span>
                       </div>
                     </td>

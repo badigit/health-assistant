@@ -2,6 +2,7 @@ import type { FacetDefinition } from '../../../components/ui/filters';
 import type { BiomarkerObservation } from '../../../types/biomarker';
 import { getFinalStatus } from '../../../utils/biomarkerUtils';
 import { deriveCountedOptions } from './helpers';
+import i18n from '../../../i18n';
 
 /**
  * Trends biomarker facets — `FacetDefinition<BiomarkerObservation>[]` for the
@@ -15,11 +16,11 @@ import { deriveCountedOptions } from './helpers';
 /** Filter by computed status: Normal / High / Low (via `getFinalStatus`). */
 export const biomarkerStatusFacet: FacetDefinition<BiomarkerObservation> = {
   id: 'status',
-  label: 'Status',
+  get label() { return i18n.t('biomarkers.facets.status', 'Status'); },
   kind: 'multi',
   mode: 'client',
   icon: 'Activity',
-  getOptions: (items) => deriveCountedOptions(items, (b) => getFinalStatus(b)),
+  getOptions: (items) => deriveCountedOptions(items, (b) => getFinalStatus(b), (v) => i18n.t(`biomarkers.status.${v.toLowerCase()}`, v)),
   predicate: (item, value) => {
     if (value.kind !== 'multi' || value.values.length === 0) return true;
     return value.values.includes(getFinalStatus(item));
@@ -47,12 +48,12 @@ const SOURCE_TYPE_LABEL: Record<string, string> = {
 /** Filter by origin: system (telemetry) / technical (lab/imaging) / examination. */
 export const biomarkerSourceTypeFacet: FacetDefinition<BiomarkerObservation> = {
   id: 'source_type',
-  label: 'Source type',
+  get label() { return i18n.t('biomarkers.facets.source_type', 'Source type'); },
   kind: 'multi',
   mode: 'client',
   icon: 'Layers',
   getOptions: (items) =>
-    deriveCountedOptions(items, biomarkerSourceType, (v) => SOURCE_TYPE_LABEL[v] ?? v),
+    deriveCountedOptions(items, biomarkerSourceType, (v) => i18n.t(`biomarkers.source_types.${v}`, SOURCE_TYPE_LABEL[v] ?? v)),
   predicate: (item, value) => {
     if (value.kind !== 'multi' || value.values.length === 0) return true;
     return value.values.includes(biomarkerSourceType(item));
@@ -63,7 +64,7 @@ export const biomarkerSourceTypeFacet: FacetDefinition<BiomarkerObservation> = {
  *  raw row as `techCategory` / `document_category`. */
 export const biomarkerSubcategoryFacet: FacetDefinition<BiomarkerObservation> = {
   id: 'subcategory',
-  label: 'Subcategory',
+  get label() { return i18n.t('biomarkers.facets.subcategory', 'Subcategory'); },
   kind: 'multi',
   mode: 'client',
   icon: 'FolderTree',
@@ -82,7 +83,7 @@ export const biomarkerSubcategoryFacet: FacetDefinition<BiomarkerObservation> = 
 /** Filter by normalized (or raw) unit symbol. */
 export const biomarkerUnitObsFacet: FacetDefinition<BiomarkerObservation> = {
   id: 'unit',
-  label: 'Unit',
+  get label() { return i18n.t('biomarkers.facets.unit', 'Unit'); },
   kind: 'multi',
   mode: 'client',
   icon: 'Ruler',
@@ -96,7 +97,7 @@ export const biomarkerUnitObsFacet: FacetDefinition<BiomarkerObservation> = {
 /** Filter by lab / source name. */
 export const biomarkerSourceFacet: FacetDefinition<BiomarkerObservation> = {
   id: 'source',
-  label: 'Lab / source',
+  get label() { return i18n.t('biomarkers.facets.source', 'Lab / source'); },
   kind: 'multi',
   mode: 'client',
   icon: 'FlaskConical',
@@ -110,7 +111,7 @@ export const biomarkerSourceFacet: FacetDefinition<BiomarkerObservation> = {
 /** Hide biomarkers that could not be mapped to a definition. */
 export const biomarkerMappedFacet: FacetDefinition<BiomarkerObservation> = {
   id: 'mapped',
-  label: 'Hide unmapped',
+  get label() { return i18n.t('biomarkers.facets.mapped', 'Hide unmapped'); },
   kind: 'toggle',
   mode: 'client',
   icon: 'Map',

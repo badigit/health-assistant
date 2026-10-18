@@ -24,7 +24,7 @@ function Header() {
   const location = useLocation();
   const isMobile = useIsMobile();
   const { setPatients, setCurrentPatient } = usePatientStore();
-  const { language, setLanguage, theme, setTheme } = useSettingsStore();
+  const { theme, setTheme } = useSettingsStore();
   const loadCurrentTenant = useTenantStore((s) => s.loadCurrentTenant);
   const clearTenant = useTenantStore((s) => s.clear);
   
@@ -117,8 +117,7 @@ function Header() {
   }, [user?.tenant_id, setPatients, setCurrentPatient, switched]); // Re-fetch when user tenant or switched status changes
 
   const handleLanguageToggle = () => {
-    const newLang = language === 'en' ? 'el' : 'en';
-    setLanguage(newLang);
+    navigate('/settings/preferences');
   };
 
   const handleThemeToggle = () => {
@@ -305,7 +304,7 @@ function Header() {
                   className="w-full flex items-center px-4 py-2 text-sm text-gray-600 dark:text-dark-text hover:bg-gray-50 dark:hover:bg-dark-bg rounded-xl transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue-500"
                 >
                   <Languages className="w-4 h-4 mr-3 text-gray-400" />
-                  <span className="font-medium">{language === 'en' ? t('common.greek') : t('common.english')}</span>
+                  <span className="font-medium">{t('common.language')}</span>
                 </button>
 
                 <button

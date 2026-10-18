@@ -1,3 +1,5 @@
+import i18n from '../i18n';
+
 /**
  * Calculate age from a birth date string (ISO format YYYY-MM-DD)
  */
@@ -29,8 +31,8 @@ export const formatAge = (birthDateString: string | null | undefined): string =>
     const birthDate = new Date(birthDateString!);
     const today = new Date();
     const months = (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth());
-    return months === 1 ? '1 month' : `${months} months`;
+    return new Intl.NumberFormat(i18n.language, { style: 'unit', unit: 'month', unitDisplay: 'long' }).format(months);
   }
   
-  return `${age} years`;
+  return new Intl.NumberFormat(i18n.language, { style: 'unit', unit: 'year', unitDisplay: 'long' }).format(age);
 };

@@ -10,7 +10,6 @@ import { useSettingsStore } from '../../store/slices/settingsSlice';
 import { useIsTablet, useIsShortViewport } from '../../hooks/useMediaQuery';
 import CreateMenu from '../ui/CreateMenu';
 import { Breadcrumbs } from '../ui/Breadcrumbs';
-import { SidebarFooter } from './SidebarFooter';
 import { MAIN_NAV, filterNavByRole, resolveActiveNavId, resolveSubPath } from '../../config/mainNav';
 
 function Sidebar() {
@@ -101,17 +100,8 @@ function Sidebar() {
         </>
       }
       footer={
-        <div className="space-y-2">
+        <div>
           <CreateMenu collapsed={effectiveCollapsed} />
-          {!effectiveCollapsed && !isShort && (
-            <div
-              aria-hidden
-              className="mt-2 h-px bg-linear-to-r from-transparent via-gray-200 to-transparent dark:via-dark-border"
-            />
-          )}
-          <div className={effectiveCollapsed || isShort ? undefined : 'pt-3'}>
-            <SidebarFooter collapsed={effectiveCollapsed} compact={isShort} />
-          </div>
         </div>
       }
     />

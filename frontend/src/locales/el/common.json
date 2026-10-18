@@ -1718,6 +1718,7 @@
     "subtitle": "Δημιουργία αντιγράφων ασφαλείας (FHIR Bundles ή πλήρη αρχεία) και επαναφορά από αρχείο"
   },
   "settings": {
+    "language_ru": "Ρωσικά",
     "nav_title": "Ρυθμίσεις",
     "nav_profile": "Προφίλ",
     "nav_preferences": "Προτιμήσεις",

@@ -22,7 +22,7 @@ function Preferences() {
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-dark-text">{t('settings.language', 'Language')}</p>
               <p className="text-sm text-gray-500 dark:text-dark-muted">
-                {language === 'en' ? t('settings.language_en', 'English') : t('settings.language_el', 'Greek')}
+                {t(`settings.language_${language}`, language)}
               </p>
             </div>
           </div>
@@ -33,6 +33,7 @@ function Preferences() {
           >
             <option value="en">{t('settings.language_en', 'English')}</option>
             <option value="el">{t('settings.language_el', 'Greek')}</option>
+            <option value="ru">{t('settings.language_ru', 'Русский')}</option>
           </select>
         </div>
 
