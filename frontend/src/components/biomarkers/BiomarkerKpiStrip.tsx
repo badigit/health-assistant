@@ -68,7 +68,7 @@ export const BiomarkerKpiStrip: React.FC<BiomarkerKpiStripProps> = ({
           {t('biomarkers.avg_overall')}
         </p>
         <div className="flex items-baseline">
-          <span className="text-xl font-black text-gray-700 dark:text-dark-text">
+          <span className="text-xl font-black text-gray-700 dark:text-dark-text break-all">
             {avg !== null ? formatBiomarkerValue(avg, precisionProfile) : '--'}
           </span>
         </div>

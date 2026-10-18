@@ -37,6 +37,7 @@ export const BiomarkerSnapshotCard: React.FC<BiomarkerSnapshotCardProps> = ({
 
   const latest = trends.length > 0 ? trends[trends.length - 1] : null;
   const previous = trends.length > 1 ? trends[trends.length - 2] : null;
+  const hasReference = biomarker.reference_range_min != null || biomarker.reference_range_max != null || (latest?.reference_range_text && latest.reference_range_text !== '--');
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
   const average = meanExactReadings(trends.filter(point => new Date(point.date) >= sixMonthsAgo));
@@ -126,7 +127,7 @@ export const BiomarkerSnapshotCard: React.FC<BiomarkerSnapshotCardProps> = ({
             <>
               <span
                 className={`${
-                  biomarker.reference_range_min != null || biomarker.reference_range_max != null
+                  hasReference
                     ? 'text-xl font-black text-blue-600 dark:text-blue-400 font-mono tracking-tighter'
                     : 'text-sm font-medium text-gray-300 dark:text-dark-muted/30 italic'
                 }`}
@@ -154,7 +155,7 @@ export const BiomarkerSnapshotCard: React.FC<BiomarkerSnapshotCardProps> = ({
           <p className="text-[10px] font-bold text-gray-400 dark:text-dark-muted uppercase tracking-widest mb-1">
             {t('biomarkers.avg_6mo')}
           </p>
-          <p className="text-lg font-black text-gray-700 dark:text-dark-text leading-none">
+          <p className="text-lg font-black text-gray-700 dark:text-dark-text leading-tight break-all">
             {average === null ? '--' : formatBiomarkerValue(average, precisionProfile)}
           </p>
         </div>
