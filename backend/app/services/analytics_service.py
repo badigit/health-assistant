@@ -1283,6 +1283,8 @@ async def get_biomarker_anomalies(
     biomarkers = trends_data.get("biomarkers", {})
 
     for slug, points in biomarkers.items():
+        from app.services.observation_precision import exact_trend_samples
+        points = exact_trend_samples(points)
         if not points:
             continue
 

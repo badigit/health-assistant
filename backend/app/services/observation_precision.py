@@ -30,3 +30,13 @@ def quantity_display(observation):
         q = observation.value_quantity
         return f"{q['comparator']}{q['value']:g}"
     return observation.value_string
+
+
+def exact_trend_samples(points):
+    """Select exact finite history only when the latest result is also exact."""
+    def exact(point):
+        value = point.get('value')
+        return not point.get('comparator') and not isinstance(value, bool) and isinstance(value, (int, float)) and isfinite(value)
+    if not points or not exact(points[-1]):
+        return []
+    return [point for point in points if exact(point)]

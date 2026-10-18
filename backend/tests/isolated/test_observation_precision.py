@@ -8,7 +8,7 @@ from app.models.fhir.patient import Observation
 from app.models.biomarker_model import BiomarkerDefinition
 from app.models.enums import BiomarkerValueType
 from app.services import fhir_service
-from app.services.observation_precision import is_censored, validate_quantity, quantity_display
+from app.services.observation_precision import is_censored, validate_quantity, quantity_display, exact_trend_samples
 from app.services.observation_value_validator import InvalidObservationValue
 
 
@@ -29,8 +29,27 @@ class QuantityTests(unittest.TestCase):
     def test_state_projection_is_not_a_censored_quantity(self):
         self.assertFalse(is_censored(SimpleNamespace(value_codeable_concept={'text': 'Negative'})))
 
+    def test_anomalies_never_analyze_bounds_or_categorical_values(self):
+        numeric = {'value': 0}
+        bound = {'value': None, 'comparator': '<', 'display_value': '<7'}
+        state = {'value': 'Negative'}
+        self.assertEqual(exact_trend_samples([numeric, bound]), [])
+        self.assertEqual(exact_trend_samples([numeric, state]), [])
+        self.assertEqual(exact_trend_samples([bound, state, numeric]), [numeric])
+
 
 class UpdateTests(unittest.IsolatedAsyncioTestCase):
+    async def test_anomaly_endpoint_handles_nonnumeric_series(self):
+        from app.services import analytics_service
+        series = {'biomarkers': {
+            'bound': [{'value': 1}, {'value': None, 'comparator': '<'}],
+            'state': [{'value': 'Negative'}],
+            'mixed': [{'value': None, 'comparator': '<'}, {'value': 1}, {'value': 1}, {'value': 1}, {'value': 1}],
+        }}
+        with patch.object(analytics_service, 'get_biomarker_trends', AsyncMock(return_value=series)):
+            result = await analytics_service.get_biomarker_anomalies(str(self.tenant), db=object())
+        self.assertEqual(result['anomalies'], [])
+
     async def asyncSetUp(self):
         self.tenant = uuid4()
         self.marker = BiomarkerDefinition(id=uuid4(), tenant_id=self.tenant, slug='test-quantity', name='Quantity', value_type=BiomarkerValueType.QUANTITY)

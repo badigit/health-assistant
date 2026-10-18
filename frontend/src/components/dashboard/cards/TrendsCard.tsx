@@ -172,7 +172,7 @@ export const TrendsCard = React.forwardRef((props: any, ref: any) => {
         <div className="mb-4">
           <div className="flex items-baseline space-x-1">
             <span className={`text-3xl font-black tracking-tight ${interpretation.toLowerCase().includes('high') ? 'text-red-600' : (interpretation.toLowerCase().includes('low') ? 'text-blue-600' : 'text-gray-900 dark:text-dark-text')}`}>
-              {formatBiomarkerValue(latestPoint.value, precisionProfile)}
+              {formatBiomarkerValue(latestPoint.display_value ?? latestPoint.value, precisionProfile)}
             </span>
             {typeof latestPoint.value === 'number' && isFinite(latestPoint.value) && (
               <span className="text-xs font-bold text-gray-400 dark:text-dark-muted uppercase">{formatUnit(latestPoint.unit)}</span>
