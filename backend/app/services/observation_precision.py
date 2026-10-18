@@ -20,7 +20,7 @@ def validate_quantity(quantity):
 
 def is_censored(observation):
     """Return whether a quantity describes a bound rather than an exact sample."""
-    quantity = observation.value_quantity
+    quantity = getattr(observation, 'value_quantity', None)
     return isinstance(quantity, dict) and bool(quantity.get("comparator"))
 
 

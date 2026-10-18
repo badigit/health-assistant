@@ -91,7 +91,7 @@ async def _get_observation_status(
 ) -> str:
     """Helper to determine the status of an observation using the new relative_score or interpretation"""
     from app.services.observation_precision import is_censored
-    if is_censored(obs) or (obs.value_string and not obs.value_quantity):
+    if is_censored(obs) or (getattr(obs, "value_string", None) and not getattr(obs, "value_quantity", None)):
         return "Unknown"
     # 0. STATE biomarker branch (plan state-biomarkers Step 7): categorical
     # values never reach the numeric pipeline. Resolve the valueCodeableConcept

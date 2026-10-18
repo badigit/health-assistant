@@ -26,6 +26,9 @@ class QuantityTests(unittest.TestCase):
             with self.assertRaises(InvalidObservationValue):
                 validate_quantity(q)
 
+    def test_state_projection_is_not_a_censored_quantity(self):
+        self.assertFalse(is_censored(SimpleNamespace(value_codeable_concept={'text': 'Negative'})))
+
 
 class UpdateTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
