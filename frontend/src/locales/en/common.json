@@ -650,7 +650,7 @@
   "biomarkers": {
     "time_ranges": {"last-24-hours":"Last 24 Hours","last-7-days":"Last 7 Days","last-30-days":"Last 30 Days","last-90-days":"Last 90 Days","last-12-months":"Last 12 Months","all-time":"All Time"},
     "facets": {"status":"Status","source_type":"Source type","subcategory":"Subcategory","unit":"Unit","source":"Lab / source","mapped":"Hide unmapped"},
-    "status": {"normal":"Normal","high":"High","low":"Low","abnormal":"Abnormal"},
+    "status": {"normal":"Normal","high":"High","low":"Low","abnormal":"Abnormal","unknown":"Not assessed"},
     "source_types": {"system":"System","technical":"Technical","examination":"Examination"},
     "uncategorized": "Uncategorized",
     "title": "Biomarkers",

@@ -27,6 +27,14 @@ afterEach(() => {
 });
 
 describe('resolved appearance settings', () => {
+  it.each(['table', 'list', 'grid'] as const)('renders coded and free-text values in %s mode', viewMode => {
+    const qualitative = { ...marker, id: 'state', displayName: 'Qualitative', valueType: 'state', value: { raw: null, normalized: null, state: 'NEG', stateDisplay: 'Negative' } } as BiomarkerObservation;
+    const text = { ...marker, id: 'text', displayName: 'Text result', value: { raw: '0–2 in field of view', normalized: '0–2 in field of view' }, interpretation: 'Unknown' } as BiomarkerObservation;
+    render(<MemoryRouter><BiomarkerList groupedData={[["Lab", [qualitative, text]]]} viewMode={viewMode} showCharts={false} /></MemoryRouter>);
+    expect(screen.getByText('Negative')).toBeInTheDocument();
+    expect(screen.getByText('0–2 in field of view')).toBeInTheDocument();
+  });
+
   it('uses stored precision and tenant density in the biomarker table', () => {
     useSettingsStore.setState({ compactDashboard: true, biomarkerDisplayMode: 'stored', biomarkerPrecision: 0 });
     const { container } = render(<MemoryRouter>

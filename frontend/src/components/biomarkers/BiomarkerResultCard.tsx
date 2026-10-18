@@ -27,7 +27,7 @@ export const BiomarkerResultCard: React.FC<BiomarkerResultCardProps> = ({ b }) =
   const { t } = useTranslation();
   const precisionProfile = useBiomarkerPrecisionProfile();
   const status = getFinalStatus(b);
-  const valueNum = b.value.normalized ?? b.value.raw;
+  const valueNum = b.valueType === 'state' ? b.value.stateDisplay ?? b.value.state : b.value.normalized ?? b.value.raw;
 
   return (
     <>
@@ -45,7 +45,7 @@ export const BiomarkerResultCard: React.FC<BiomarkerResultCardProps> = ({ b }) =
       <div className="flex items-baseline gap-2">
         <span
           className={`text-2xl font-black ${
-            status === 'Normal'
+            !['High', 'Low', 'Abnormal', 'Warning'].includes(status)
               ? 'text-gray-900 dark:text-dark-text'
               : 'text-red-600 dark:text-red-400'
           }`}
@@ -53,7 +53,7 @@ export const BiomarkerResultCard: React.FC<BiomarkerResultCardProps> = ({ b }) =
           {formatBiomarkerValue(valueNum, precisionProfile)}
         </span>
         <span className="text-xs text-gray-400 font-medium">
-          {b.unit.normalizedSymbol || b.unit.rawSymbol}
+          {b.valueType === 'state' ? '' : b.unit.normalizedSymbol || b.unit.rawSymbol}
         </span>
         <span
           className={`ml-auto text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 ${getStatusColorClass(

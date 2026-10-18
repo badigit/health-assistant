@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from uuid import UUID
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 from datetime import datetime
 
 
@@ -11,8 +11,10 @@ class ObservationBase(BaseModel):
     effective_datetime: Optional[datetime] = None
     value_quantity: Optional[Dict[str, Any]] = None
     value_string: Optional[str] = None
+    value_codeable_concept: Optional[Dict[str, Any]] = None
+    component: Optional[List[Dict[str, Any]]] = None
     reference_range: Optional[List[Dict[str, Any]]] = None
-    interpretation: Optional[str] = None
+    interpretation: Optional[Union[str, List[Dict[str, Any]]]] = None
     biomarker_id: Optional[UUID] = None
     biomarker_slug: Optional[str] = None
     biomarker_info: Optional[str] = None

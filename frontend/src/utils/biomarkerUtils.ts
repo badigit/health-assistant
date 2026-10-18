@@ -2,6 +2,12 @@ import { BiomarkerObservation } from '../types/biomarker';
 import type { Observation } from '../types/observation';
 import { codeableText } from './textFormat';
 
+const numericValue = (value: unknown): number => {
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string' || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value.trim())) return NaN;
+  return Number(value);
+};
+
 /**
  * The single biomarker-status algorithm. Range-based check first (most
  * accurate), then interpretation-string fallback. Both {@link getFinalStatus}
@@ -15,7 +21,7 @@ export function computeStatus(
   max: number | null | undefined,
   interpretation: string | null | undefined,
 ): string {
-  const val = typeof rawVal === 'number' ? rawVal : parseFloat(rawVal as any);
+  const val = numericValue(rawVal);
 
   // 1. Range based check (Most accurate)
   if (val !== null && val !== undefined && !isNaN(val)) {
@@ -30,6 +36,7 @@ export function computeStatus(
 
   // 2. Fallback to existing interpretation
   const s = (codeableText(interpretation) ?? '').toLowerCase().trim();
+  if (s === 'unknown') return 'Unknown';
   if (s.includes('high') || s === 'h') return 'High';
   if (s.includes('low') || s === 'l') return 'Low';
   if (s.includes('warning')) return 'Warning';
@@ -172,7 +179,7 @@ export const formatBiomarkerValue = (
   precision: BiomarkerPrecisionProfile | number = 0
 ): string => {
   if (value === null || value === undefined || value === '') return '--';
-  const num = typeof value === 'number' ? value : parseFloat(value);
+  const num = numericValue(value);
   if (!isFinite(num)) return String(value);
   if (typeof precision !== 'number' && precision.mode === 'stored') return String(num);
   const p = getPrecisionForValue(num, precision);

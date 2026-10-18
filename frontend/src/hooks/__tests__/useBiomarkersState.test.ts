@@ -163,4 +163,28 @@ describe('useBiomarkers — STATE biomarker branch', () => {
     const states = result.current.biomarkers.map((b) => b.value.state).sort();
     expect(states).toEqual(['NEG', 'POS']);
   });
+
+  it('preserves free text and source reference text without inferring normality', async () => {
+    const { useBiomarkers } = await import('../useBiomarkers');
+    const { result } = renderHook(() => useBiomarkers({ observations: [makeQuantityObservation({
+      value_quantity: undefined, raw_value: undefined, normalized_value: undefined,
+      value_string: '0–2 in field of view', reference_range: [{ text: '0–3 in field of view' }],
+    })] }));
+    await waitFor(() => expect(result.current.biomarkers).toHaveLength(1));
+    const row = result.current.biomarkers[0];
+    expect(row.value.raw).toBe('0–2 in field of view');
+    expect(row.referenceRange.standard?.displayText).toBe('0–3 in field of view');
+    expect(row.interpretation).toBe('Unknown');
+  });
+
+  it('keeps an inclusive upper bound and its source wording in normalized mode', async () => {
+    const { useBiomarkers } = await import('../useBiomarkers');
+    const { result } = renderHook(() => useBiomarkers({ observations: [makeQuantityObservation({
+      value_quantity: { value: 60, unit: 'min' }, raw_value: 60, normalized_value: 60,
+      reference_range: [{ high: { value: 60, unit: 'min' }, text: '≤60 min' }],
+    })] }));
+    await waitFor(() => expect(result.current.biomarkers).toHaveLength(1));
+    expect(result.current.biomarkers[0].referenceRange.standard).toEqual({ min: null, max: 60, displayText: '≤60 min' });
+    expect(result.current.biomarkers[0].interpretation).toBe('Normal');
+  });
 });

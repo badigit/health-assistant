@@ -96,6 +96,9 @@ export const BiomarkerList = React.memo(({
 
   // Helper to resolve active data based on mode
   const getActiveData = (marker: BiomarkerObservation) => {
+    if (marker.valueType === 'state') {
+      return { value: marker.value.stateDisplay ?? marker.value.state, unit: '', referenceRange: marker.referenceRange, isNormalized: false };
+    }
     if (activeDataMode === 'raw') {
       return {
         value: marker.value.raw,
@@ -607,6 +610,8 @@ export const BiomarkerList = React.memo(({
                           <ArrowUpCircle className="w-4 h-4 text-red-500 mr-2" />
                         ) : m.interpretation.toLowerCase().includes('low') || m.interpretation.toLowerCase() === 'l' ? (
                           <ArrowDownCircle className="w-4 h-4 text-blue-500 mr-2" />
+                        ) : m.interpretation === 'Unknown' ? (
+                          <Info className="w-4 h-4 text-gray-400 mr-2" />
                         ) : (
                           <CheckCircle2 className="w-4 h-4 text-green-200 dark:text-green-800/30 mr-2" />
                         )}

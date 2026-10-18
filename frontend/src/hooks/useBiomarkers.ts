@@ -111,7 +111,8 @@ export function useBiomarkers({ documents = [], trendsData, observations = [] }:
       if (obs.definitionId) {
         const def = definitions.byId.get(obs.definitionId);
         if (def) {
-          return { ...obs, displayName: def.name, isUnmapped: false };
+          const state = obs.valueType === 'state' ? def.allowed_states?.find(s => s.code === obs.value.state && s.system === obs.value.stateSystem) : undefined;
+          return { ...obs, displayName: def.name, isUnmapped: false, interpretation: state ? (state.is_normal ? 'Normal' : 'Abnormal') : obs.interpretation };
         }
         // Backend says it's mapped but our cache is stale — trust the backend
         // rather than falsely flagging it unmapped (which could lead to
@@ -159,7 +160,7 @@ export function useBiomarkers({ documents = [], trendsData, observations = [] }:
       max = first.high?.value ?? first.max;
       
       // If still null, check if the first element has a 'text' or 'displayText'
-      if ((min === null || min === undefined) && first.text) {
+      if ((min === null || min === undefined) && (max === null || max === undefined) && first.text) {
          return extractRange(first.text);
       }
     }
@@ -255,8 +256,13 @@ export function useBiomarkers({ documents = [], trendsData, observations = [] }:
           max: obs.biomarker_reference_range_max
         });
 
-        const rawRef = { ...rawRange, displayText: getRangeText(rawRange.min, rawRange.max) };
+        const sourceRange = obs.lab_reference_range || obs.reference_range;
+        const sourceRangeText = Array.isArray(sourceRange) ? sourceRange[0]?.text : sourceRange?.text;
+        const rawRef = { ...rawRange, displayText: sourceRangeText || getRangeText(rawRange.min, rawRange.max) };
         const stdRef = { ...standardRange, displayText: getRangeText(standardRange.min, standardRange.max) };
+        const hasStandardRange = standardRange.min !== null || standardRange.max !== null;
+        const sameUnit = !obs.normalized_unit || obs.normalized_unit === obs.value_quantity?.unit;
+        const normalizedRef = hasStandardRange || !sameUnit ? stdRef : rawRef;
 
         // Value extraction — STATE biomarkers (valueCodeableConcept) take a
         // separate branch so the state code/display land in ``value.state``
@@ -276,8 +282,8 @@ export function useBiomarkers({ documents = [], trendsData, observations = [] }:
               stateSystem: stateValue.stateSystem,
             }
           : {
-              raw: obs.raw_value ?? obs.value_quantity?.value ?? null,
-              normalized: obs.normalized_value ?? obs.value_quantity?.value ?? null,
+              raw: obs.value_string ?? obs.raw_value ?? obs.value_quantity?.value ?? null,
+              normalized: obs.value_string ?? obs.normalized_value ?? obs.value_quantity?.value ?? null,
             };
         const valueType: BiomarkerObservation['valueType'] = isState ? 'state' : 'quantity';
 
@@ -295,19 +301,14 @@ export function useBiomarkers({ documents = [], trendsData, observations = [] }:
           referenceRange: isState && stateValue
             ? // STATE biomarkers have no numeric reference range — the
               // normal set lives on the definition (allowed_states.is_normal).
-              { min: null, max: null, displayText: stateValue.stateDisplay || '--' }
+              { min: null, max: null, displayText: sourceRangeText || '--' }
             : {
-                ...(obs.normalized_value ? stdRef : rawRef),
+                ...(obs.normalized_value != null ? normalizedRef : rawRef),
                 raw: rawRef,
-                standard: stdRef
+                standard: normalizedRef
               },
           relativeScore: isState ? null : obs.relative_score || null,
-          interpretation: isState
-            ? // For STATE, the backend already computed Normal/Abnormal via
-              // the is_normal set; trust the interpretation field if present,
-              // otherwise defer to the general "Normal" default.
-              codeableText(obs.interpretation) || 'Normal'
-            : codeableText(obs.interpretation) || 'Normal',
+          interpretation: codeableText(obs.interpretation) || 'Unknown',
           source: {
             documentId: obs.document_id || '',
             filename: 'Laboratory Result',
