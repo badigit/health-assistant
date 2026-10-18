@@ -120,6 +120,7 @@ export const getStatusTextColor = (status: string): string => {
  * Formats medical units to properly display superscripts (e.g., 10^3 -> 10³).
  */
 export const formatUnit = (unit: string): string => {  if (!unit) return '';
+  if (unit === '1') return '';
   
   const superscriptMap: Record<string, string> = {
     '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
@@ -212,6 +213,11 @@ export const formatObservationDisplay = (
   const raw = obs.value.normalized ?? obs.value.raw;
   return {
     value: formatBiomarkerValue(raw, precision),
-    unit: obs.unit.rawSymbol || '',
+    unit: obs.unit.rawSymbol === '1' ? '' : obs.unit.rawSymbol || '',
   };
 };
+
+export function meanExactReadings(points: Array<{ value: unknown; comparator?: string | null }>): number | null {
+  const values = points.filter(p => !p.comparator && typeof p.value === 'number' && Number.isFinite(p.value)).map(p => p.value as number);
+  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+}

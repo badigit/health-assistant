@@ -15,6 +15,7 @@ import {
   getStatusColorClass,
   getStatusTextColor,
   formatBiomarkerValue,
+  meanExactReadings,
   type BiomarkerPrecisionProfile,
 } from '../../utils/biomarkerUtils';
 import type { AllowedState, Biomarker } from '../../types/biomarker';
@@ -36,6 +37,9 @@ export const BiomarkerSnapshotCard: React.FC<BiomarkerSnapshotCardProps> = ({
 
   const latest = trends.length > 0 ? trends[trends.length - 1] : null;
   const previous = trends.length > 1 ? trends[trends.length - 2] : null;
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  const average = meanExactReadings(trends.filter(point => new Date(point.date) >= sixMonthsAgo));
   // Percentage change vs the previous reading — only meaningful for QUANTITY
   // biomarkers with two or more numeric points and a non-zero baseline.
   const deltaPct =
@@ -74,7 +78,7 @@ export const BiomarkerSnapshotCard: React.FC<BiomarkerSnapshotCardProps> = ({
               latest ? getStatusTextColor(interpretation) : 'text-gray-900 dark:text-dark-text'
             }`}
           >
-            {latest ? formatBiomarkerValue(latest.value, precisionProfile) : '--'}
+            {latest ? formatBiomarkerValue(latest.display_value ?? latest.value, precisionProfile) : '--'}
           </span>
           <span className="text-sm font-bold text-gray-400 dark:text-dark-muted uppercase">
             {latest
@@ -133,7 +137,7 @@ export const BiomarkerSnapshotCard: React.FC<BiomarkerSnapshotCardProps> = ({
                     ? `> ${biomarker.reference_range_min}`
                     : biomarker.reference_range_max != null
                       ? `< ${biomarker.reference_range_max}`
-                      : 'undefined'}
+                      : latest?.reference_range_text || '--'}
               </span>
               {(biomarker.reference_range_min != null || biomarker.reference_range_max != null) && (
                 <span className="text-xs font-bold text-gray-400 dark:text-dark-muted">
@@ -151,9 +155,7 @@ export const BiomarkerSnapshotCard: React.FC<BiomarkerSnapshotCardProps> = ({
             {t('biomarkers.avg_6mo')}
           </p>
           <p className="text-lg font-black text-gray-700 dark:text-dark-text leading-none">
-            {trends.length > 0 && trends.every((tr: any) => typeof tr.value === 'number')
-              ? (trends.reduce((a, b) => a + b.value, 0) / trends.length).toFixed(1)
-              : '--'}
+            {average === null ? '--' : formatBiomarkerValue(average, precisionProfile)}
           </p>
         </div>
         <div>

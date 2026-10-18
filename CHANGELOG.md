@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Biomarker summaries show literal bounds and laboratory reference text, omit dimensionless unit suffixes, and average only exact samples using the configured precision.
 - Exclude censored and categorical results from numeric anomaly calculations while retaining literal values on dashboard trend cards.
 - Preserve quantity comparators in examination results and editing; censored bounds are excluded from numeric trend samples and cached normalization.
 - Update observation reference ranges and catalog associations with value validation and tenant isolation, without replacing source records.

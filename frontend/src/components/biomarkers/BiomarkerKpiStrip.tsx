@@ -9,6 +9,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   formatBiomarkerValue,
+  meanExactReadings,
   formatUnit,
   type BiomarkerPrecisionProfile,
 } from '../../utils/biomarkerUtils';
@@ -27,7 +28,7 @@ export const BiomarkerKpiStrip: React.FC<BiomarkerKpiStripProps> = ({
 }) => {
   const { t } = useTranslation();
   const latest = trends.length > 0 ? trends[trends.length - 1] : null;
-  const avg = trends.length > 0 ? trends.reduce((a, b) => a + b.value, 0) / trends.length : null;
+  const avg = meanExactReadings(trends);
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -37,7 +38,7 @@ export const BiomarkerKpiStrip: React.FC<BiomarkerKpiStripProps> = ({
         </p>
         <div className="flex items-baseline space-x-1">
           <span className="text-xl font-black text-gray-900 dark:text-dark-text">
-            {latest ? formatBiomarkerValue(latest.value, precisionProfile) : '--'}
+            {latest ? formatBiomarkerValue(latest.display_value ?? latest.value, precisionProfile) : '--'}
           </span>
           <span className="text-[10px] font-bold text-gray-400 dark:text-dark-muted uppercase">
             {latest
@@ -57,7 +58,7 @@ export const BiomarkerKpiStrip: React.FC<BiomarkerKpiStripProps> = ({
           <span className="text-sm font-bold text-blue-600 dark:text-blue-400 font-mono leading-none">
             {biomarker.reference_range_min != null || biomarker.reference_range_max != null
               ? `${biomarker.reference_range_min ?? '0'} - ${biomarker.reference_range_max ?? '∞'}`
-              : 'undefined'}
+              : latest?.reference_range_text || '--'}
           </span>
         </div>
       </div>
@@ -68,7 +69,7 @@ export const BiomarkerKpiStrip: React.FC<BiomarkerKpiStripProps> = ({
         </p>
         <div className="flex items-baseline">
           <span className="text-xl font-black text-gray-700 dark:text-dark-text">
-            {avg !== null ? avg.toFixed(1) : '--'}
+            {avg !== null ? formatBiomarkerValue(avg, precisionProfile) : '--'}
           </span>
         </div>
       </div>
