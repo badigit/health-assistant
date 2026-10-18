@@ -6,10 +6,16 @@ declare const self: ServiceWorkerGlobalScope;
 
 precacheAndRoute(self.__WB_MANIFEST);
 
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') event.waitUntil(self.skipWaiting());
+});
+
 // Offline navigation fallback: serve the precached SPA shell for every
 // navigation (dev is excluded — the dev server owns routing/HMR).
 if (import.meta.env.PROD) {
-  registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')));
+  registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html'), {
+    denylist: [/^\/api(?:\/|$)/, /^\/fhir(?:\/|$)/, /^\/\.well-known(?:\/|$)/],
+  }));
 }
 
 self.addEventListener('push', (event) => {

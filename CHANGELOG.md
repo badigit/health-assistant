@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Tenant and user biomarker display modes: stored numeric precision without rounding or padded zeros, and optional trailing-zero suppression for fixed precision.
+
+### Fixed
+- Apply compact appearance settings to biomarker tables, lists and grids, reducing row height, card padding and group spacing.
+- Respect biomarker precision settings in observation result cards; exclude API, FHIR and discovery URLs from the service worker navigation fallback.
+
 ## [v0.8.0] - 2026-09-20
 
 ### Added

@@ -15,6 +15,7 @@ import { Perspective } from '../../hooks/useBiomarkers';
 import { useBiomarkerPrecisionProfile } from '../../hooks/useBiomarkerPrecision';
 import { UnmappedBiomarkerMenu } from './UnmappedBiomarkerMenu';
 import { sanitizeHtml } from '../../utils/sanitize';
+import { useSettingsStore } from '../../store/slices/settingsSlice';
 
 interface BiomarkerListProps {
   biomarkers?: BiomarkerObservation[];
@@ -51,7 +52,7 @@ export const BiomarkerList = React.memo(({
   biomarkers = [],
   groupedData = [],
   viewMode = 'grid',
-  compact = false,
+  compact: compactProp,
   showCharts = true,
   perspective = 'clinical',
   searchTerm = '',
@@ -77,6 +78,8 @@ export const BiomarkerList = React.memo(({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const precisionProfile = useBiomarkerPrecisionProfile();
+  const compactSetting = useSettingsStore(state => state.compactDashboard);
+  const compact = compactProp ?? compactSetting;
   const [selectedInfo, setSelectedInfo] = useState<BiomarkerObservation | null>(null);
   const [internalDataMode, setInternalDataMode] = useState<'raw' | 'normalized'>(initialDataMode);
   
@@ -237,9 +240,9 @@ export const BiomarkerList = React.memo(({
       <div 
         key={marker.id} 
         className={`bg-white dark:bg-dark-surface shadow-xs border border-gray-100 dark:border-dark-border hover:shadow-xl transition-all flex flex-col group relative ${
-          compact ? 'rounded-2xl p-4' : 'rounded-3xl p-5 sm:p-6'
+          compact ? 'rounded-xl p-3' : 'rounded-3xl p-5 sm:p-6'
         } ${
-          showCharts ? 'min-h-[300px] sm:min-h-[340px]' : 'min-h-fit'
+          showCharts ? (compact ? 'min-h-[220px]' : 'min-h-[300px] sm:min-h-[340px]') : 'min-h-fit'
         }`}
       >
         <div className={`flex justify-between items-start ${isNavigable ? 'cursor-pointer' : ''} ${compact ? 'mb-2' : 'mb-4'}`} onClick={() => isNavigable && navigate(`/biomarkers/details/${targetId}`)}>
@@ -325,7 +328,7 @@ export const BiomarkerList = React.memo(({
         </div>
 
         {showCharts ? (
-          <div className="flex-1 min-h-[140px] sm:min-h-[180px] nodrag mt-2">
+          <div className={`flex-1 nodrag mt-2 ${compact ? 'min-h-[100px]' : 'min-h-[140px] sm:min-h-[180px]'}`}>
             <LineChart 
               data={dataPts} 
               height="100%" 
@@ -397,7 +400,7 @@ export const BiomarkerList = React.memo(({
     const isNavigable = !!targetId;
 
     return (
-      <div key={marker.id} className="bg-white dark:bg-dark-surface rounded-2xl shadow-xs border border-gray-100 dark:border-dark-border p-4 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-8 hover:shadow-md transition-all group relative">
+      <div key={marker.id} className={`bg-white dark:bg-dark-surface rounded-2xl shadow-xs border border-gray-100 dark:border-dark-border flex flex-col sm:flex-row items-center sm:space-y-0 hover:shadow-md transition-all group relative ${compact ? 'p-3 space-y-2 sm:space-x-3' : 'p-4 space-y-4 sm:space-x-8'}`}>
         <div className={`w-full sm:w-[250px] flex items-center shrink-0 ${isNavigable ? 'cursor-pointer' : ''}`} onClick={() => isNavigable && navigate(`/biomarkers/details/${targetId}`)}>
           <div className="flex flex-col min-w-0">
             <div className="flex items-center">
@@ -473,7 +476,7 @@ export const BiomarkerList = React.memo(({
         </div>
 
         {showCharts ? (
-          <div className="w-full sm:flex-1 h-20 nodrag">
+          <div className={`w-full sm:flex-1 nodrag ${compact ? 'h-10' : 'h-20'}`}>
             <LineChart 
               data={dataPts} 
               height="100%" 
@@ -507,7 +510,7 @@ export const BiomarkerList = React.memo(({
   };
 
   const renderTable = (groupName: string, markers: BiomarkerObservation[]) => (
-    <div key={groupName} className="space-y-4">
+    <div key={groupName} className={compact ? 'space-y-2' : 'space-y-4'}>
       <div className="flex items-center space-x-4">
         <div className="h-px flex-1 bg-gray-100 dark:bg-dark-border opacity-50"></div>
         <h2 className="text-[10px] font-black text-gray-400 dark:text-dark-muted uppercase tracking-[0.3em] whitespace-nowrap">
@@ -517,7 +520,7 @@ export const BiomarkerList = React.memo(({
       </div>
       
       <div className="bg-white dark:bg-dark-surface rounded-3xl border border-gray-100 dark:border-dark-border shadow-xs overflow-hidden overflow-x-auto no-scrollbar">
-         <table className="min-w-full divide-y divide-gray-50 dark:divide-dark-border">
+         <table className="biomarker-table min-w-full divide-y divide-gray-50 dark:divide-dark-border">
             <thead className="bg-gray-50/30 dark:bg-dark-bg/30">
               <tr>
                 <th 
@@ -615,7 +618,7 @@ export const BiomarkerList = React.memo(({
                     <td className="px-8 py-5 whitespace-nowrap text-xs text-gray-400 font-bold font-mono tracking-tight">{active.referenceRange.displayText}</td>
                     {showCharts ? (
                       <td className="px-8 py-5 whitespace-nowrap text-center">
-                         <div className="h-10 w-24 mx-auto">
+                         <div className={`w-24 mx-auto ${compact ? 'h-6' : 'h-10'}`}>
                             <LineChart 
                               data={m._rawJson?.history?.slice(-10).map((d: any) => ({ 
                                 name: new Date(d.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
@@ -661,7 +664,7 @@ export const BiomarkerList = React.memo(({
   );
 
   return (
-    <div className="space-y-8 sm:space-y-12 animate-in fade-in duration-500">
+    <div data-density={compact ? 'compact' : 'comfortable'} className={`biomarker-collection animate-in fade-in duration-500 ${compact ? 'space-y-4' : 'space-y-8 sm:space-y-12'}`}>
       {/* Internal Control Bar */}
       {!hideDataModeToggle && (
         <div className="flex items-center justify-end">
@@ -686,7 +689,7 @@ export const BiomarkerList = React.memo(({
         sortedGroupedData.map(([groupName, markers]) => renderTable(groupName, markers))
       ) : (
         groupedData.map(([groupName, markers]) => (
-          <div key={groupName} className="space-y-4 sm:space-y-6">
+          <div key={groupName} className={compact ? 'space-y-2' : 'space-y-4 sm:space-y-6'}>
             <div className="flex items-center space-x-4">
               <div className="h-px flex-1 bg-gray-200 dark:bg-dark-border"></div>
               <h2 className="text-[10px] sm:text-sm font-black text-gray-400 dark:text-dark-muted uppercase tracking-[0.2em] whitespace-nowrap">
@@ -694,7 +697,7 @@ export const BiomarkerList = React.memo(({
               </h2>
               <div className="h-px flex-1 bg-gray-200 dark:bg-dark-border"></div>
             </div>
-            <div className={viewMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 sm:gap-6' : 'space-y-3 sm:space-y-4'}>
+            <div className={viewMode === 'grid' ? (compact ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3' : 'grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 sm:gap-6') : (compact ? 'space-y-2' : 'space-y-3 sm:space-y-4')}>
               {markers.map(viewMode === 'grid' ? renderGridCard : renderListItem)}
             </div>
           </div>
