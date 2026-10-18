@@ -65,7 +65,8 @@ export const DataMiniPage: React.FC<DataMiniPageProps> = ({ data, toolName, onCl
           return val;
         };
 
-        const displayValue = extractValue(item.value_quantity?.value ?? item.value?.raw ?? item.value ?? item.value_string);
+        const quantity = item.value_quantity;
+        const displayValue = extractValue(quantity?.comparator ? `${quantity.comparator}${quantity.value}` : quantity?.value ?? item.value?.raw ?? item.value ?? item.value_string);
         const displayUnit = item.value_quantity?.unit ?? item.raw_unit?.symbol ?? item.unit?.rawSymbol ?? item.unit ?? '';
         
         let rangeText = 'N/A';
