@@ -46,7 +46,8 @@ docs/
 *.md
 !README.md
 docker/
-scripts/
+scripts/*
+!scripts/verify-web-build.mjs
 assets/
 .claude
 .cursor
