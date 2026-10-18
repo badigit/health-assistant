@@ -525,7 +525,7 @@ function ExaminationList() {
   );
 
   const List = (
-        <div className="relative space-y-4">
+        <div className="relative space-y-2">
           {loading ? (
              <LoadingState variant="mini" showText={true} message={t('examinations.syncing')} />
           ) : filteredExaminations.length === 0 ? (
@@ -534,6 +534,7 @@ function ExaminationList() {
             <ExaminationCard
               key={exam.id}
               examination={exam}
+              variant="history"
               isSelected={selectedExam?.id === exam.id}
               isEditMode={isEditMode}
               onSelectToggle={toggleSelectOne}
@@ -704,7 +705,7 @@ function ExaminationList() {
         list={List}
         listHeader={ListHeader}
         detail={Preview}
-        listWidth="lg:w-[400px] xl:w-[500px]"
+        listWidth="lg:w-[320px] xl:w-[360px]"
         containerRef={containerRef}
         showDetail={isLargeScreen}
       />

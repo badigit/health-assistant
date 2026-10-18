@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tenant and user biomarker display modes: stored numeric precision without rounding or padded zeros, and optional trailing-zero suppression for fixed precision.
 
 ### Fixed
+- Keep examination history cards compact with a short preview, facility and result counts; show full clinical notes in the detail panel.
 - Preserve qualitative and free-text examination results, source reference text and unknown result status in biomarker tables and cards.
 - Apply compact appearance settings to biomarker tables, lists and grids, reducing row height, card padding and group spacing.
 - Respect biomarker precision settings in observation result cards; exclude API, FHIR and discovery URLs from the service worker navigation fallback.
