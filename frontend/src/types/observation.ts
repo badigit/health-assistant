@@ -10,6 +10,7 @@
  */
 
 export interface ValueQuantity {
+  comparator?: '<' | '<=' | '>' | '>=';
   value: number;
   unit: string;
   system?: string;

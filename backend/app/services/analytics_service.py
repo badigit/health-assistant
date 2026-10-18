@@ -90,6 +90,9 @@ async def _get_observation_status(
     name: str, val: Any, obs: Observation, ref_min: float = None, ref_max: float = None
 ) -> str:
     """Helper to determine the status of an observation using the new relative_score or interpretation"""
+    from app.services.observation_precision import is_censored
+    if is_censored(obs) or (obs.value_string and not obs.value_quantity):
+        return "Unknown"
     # 0. STATE biomarker branch (plan state-biomarkers Step 7): categorical
     # values never reach the numeric pipeline. Resolve the valueCodeableConcept
     # against the biomarker's ``allowed_states.is_normal`` set. Multi-state
@@ -435,6 +438,7 @@ async def get_dashboard_data(
 
     unique_labs = {}
     for obs, b_info in all_labs:
+        from app.services.observation_precision import is_censored, quantity_display
         name = obs.code.get("text", "Unknown")
         if name not in unique_labs and len(unique_labs) < 10:
             val = getattr(obs, "normalized_value", None)
@@ -447,6 +451,8 @@ async def get_dashboard_data(
                     else obs.value_string
                 )
 
+            if is_censored(obs):
+                val = quantity_display(obs)
             if val is not None:
                 # Basic interpretation
                 status = await _get_observation_status(name, val, obs)
@@ -844,7 +850,10 @@ async def get_biomarker_trends(
             if val is None and obs.value_quantity:
                 val = obs.value_quantity.get("value")
 
-        if val is not None:
+        from app.services.observation_precision import is_censored, quantity_display
+        if is_censored(obs):
+            val = None
+        if val is not None or is_censored(obs) or (obs.biomarker_id and obs.value_string):
             obs_date = obs.effective_datetime
             source_category = "other"
             exam_id = None
@@ -984,6 +993,8 @@ async def get_biomarker_trends(
             trends[key].append(
                 {
                     "observation_id": str(obs.id),
+                    "display_value": quantity_display(obs) if is_censored(obs) or obs.value_string else None,
+                    "comparator": obs.value_quantity.get("comparator") if is_censored(obs) else None,
                     "date": obs_date.isoformat() if obs_date else "",
                     "value": val,
                     "unit": obs.value_quantity.get("unit", "")
@@ -1469,6 +1480,9 @@ async def get_category_analytics(
         from datetime import datetime
 
         for obs in observations:
+            from app.services.observation_precision import is_censored
+            if is_censored(obs):
+                continue
             name = obs.code.get("text", "Unknown")
             key = name.lower()
             if key not in trends:

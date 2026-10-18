@@ -177,6 +177,19 @@ describe('useBiomarkers — STATE biomarker branch', () => {
     expect(row.interpretation).toBe('Unknown');
   });
 
+  it('keeps a quantity comparator visible and does not classify the bound as exact', async () => {
+    const { useBiomarkers } = await import('../useBiomarkers');
+    const { result } = renderHook(() => useBiomarkers({ observations: [makeQuantityObservation({
+      value_quantity: { value: 7, comparator: '<', unit: 'mg/L' },
+      raw_value: 7, normalized_value: 7,
+      reference_range: [{ high: { value: 10, unit: 'mg/L' } }],
+    })] }));
+    await waitFor(() => expect(result.current.biomarkers).toHaveLength(1));
+    expect(result.current.biomarkers[0].value.raw).toBe('<7');
+    expect(result.current.biomarkers[0].value.normalized).toBe('<7');
+    expect(result.current.biomarkers[0].interpretation).toBe('Unknown');
+  });
+
   it('keeps an inclusive upper bound and its source wording in normalized mode', async () => {
     const { useBiomarkers } = await import('../useBiomarkers');
     const { result } = renderHook(() => useBiomarkers({ observations: [makeQuantityObservation({

@@ -87,11 +87,10 @@ async def update_observation_endpoint(
     current_user: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Update an existing observation's mutable fields (value, unit,
-    effective_datetime, method, comment). Identity fields (biomarker_id,
-    patient_id, code, subject) are not patched — re-assigning a biomarker
-    requires delete + re-create.
-    """
+    """Update values, references or a tenant-validated catalog association."""
+    allowed = {"value_quantity", "value_string", "value_codeable_concept", "valueCodeableConcept", "component", "raw_value", "effective_datetime", "method", "comment", "note_text", "note", "reference_range", "interpretation", "biomarker_id"}
+    if set(updates) - allowed:
+        raise HTTPException(status_code=422, detail="Unsupported observation update fields")
     existing = await get_observation(observation_id, current_user.tenant_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Observation not found")

@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 
 // Stub i18n — return the key (so we can assert presence) like the other tests.
 vi.mock('react-i18next', () => ({
+  initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({ t: (_: string, fallback?: string) => fallback ?? 't-key' }),
 }));
 

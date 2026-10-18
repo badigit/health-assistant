@@ -209,25 +209,25 @@ export const BiomarkerList = React.memo(({
     // For trends/history we use the appropriate values
     const dataPts = history.slice(-10).map((d: any) => ({ 
       name: new Date(d.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), 
-      value: activeDataMode === 'raw' ? (d.raw_value || d.value) : d.value,
+      value: activeDataMode === 'raw' ? (d.raw_value ?? d.value) : d.value,
       min_value: d.min_value,
       max_value: d.max_value,
       range: (d.min_value !== undefined && d.max_value !== undefined) ? [d.min_value, d.max_value] : undefined
     }));
 
-    let change = 0;
+    let change: number | null = null;
     if (history.length > 1) {
       const first = history[0];
       const current = history[history.length - 1];
-      const firstVal = activeDataMode === 'raw' ? (first.raw_value || first.value) : first.value;
-      const currentVal = activeDataMode === 'raw' ? (current.raw_value || current.value) : current.value;
+      const firstVal = activeDataMode === 'raw' ? (first.raw_value ?? first.value) : first.value;
+      const currentVal = activeDataMode === 'raw' ? (current.raw_value ?? current.value) : current.value;
       
-      if (firstVal && firstVal !== 0) {
+      if (typeof firstVal === 'number' && Number.isFinite(firstVal) && firstVal !== 0 && typeof currentVal === 'number' && Number.isFinite(currentVal)) {
         change = ((currentVal - firstVal) / firstVal) * 100;
       }
     }
-    const changeStr = change > 0 ? `+${change.toFixed(1)}%` : `${change.toFixed(1)}%`;
-    const changeColor = change > 0 ? 'text-red-500' : (change < 0 ? 'text-green-500' : 'text-gray-500');
+    const changeStr = change === null ? '—' : change > 0 ? `+${change.toFixed(1)}%` : `${change.toFixed(1)}%`;
+    const changeColor = change === null ? 'text-gray-500' : change > 0 ? 'text-red-500' : (change < 0 ? 'text-green-500' : 'text-gray-500');
     
     // UI Logic for icons and value colors
     const status = marker.interpretation.toLowerCase();
@@ -323,8 +323,8 @@ export const BiomarkerList = React.memo(({
             {formatBiomarkerValue(active.value, precisionProfile)}
           </span>
           {showCharts && history.length > 1 && (
-            <div className={`flex items-center text-[10px] font-bold ${change > 0 ? 'text-red-500' : 'text-green-500'} opacity-80`}>
-              {change > 0 ? <ArrowUp className="w-2.5 h-2.5 mr-0.5" /> : <ArrowDown className="w-2.5 h-2.5 mr-0.5" />}
+            <div className={`flex items-center text-[10px] font-bold ${change === null ? 'text-gray-500' : change > 0 ? 'text-red-500' : 'text-green-500'} opacity-80`}>
+              {change !== null && (change > 0 ? <ArrowUp className="w-2.5 h-2.5 mr-0.5" /> : <ArrowDown className="w-2.5 h-2.5 mr-0.5" />)}
               {changeStr}
             </div>
           )}
@@ -374,24 +374,24 @@ export const BiomarkerList = React.memo(({
     const history = marker._rawJson?.history || [];
     const dataPts = history.slice(-10).map((d: any) => ({ 
       name: new Date(d.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), 
-      value: activeDataMode === 'raw' ? (d.raw_value || d.value) : d.value,
+      value: activeDataMode === 'raw' ? (d.raw_value ?? d.value) : d.value,
       min_value: d.min_value,
       max_value: d.max_value,
       range: (d.min_value !== undefined && d.max_value !== undefined) ? [d.min_value, d.max_value] : undefined
     }));
 
-    let change = 0;
+    let change: number | null = null;
     if (history.length > 1) {
       const first = history[0];
       const current = history[history.length - 1];
-      const firstVal = activeDataMode === 'raw' ? (first.raw_value || first.value) : first.value;
-      const currentVal = activeDataMode === 'raw' ? (current.raw_value || current.value) : current.value;
+      const firstVal = activeDataMode === 'raw' ? (first.raw_value ?? first.value) : first.value;
+      const currentVal = activeDataMode === 'raw' ? (current.raw_value ?? current.value) : current.value;
       
-      if (firstVal && firstVal !== 0) {
+      if (typeof firstVal === 'number' && Number.isFinite(firstVal) && firstVal !== 0 && typeof currentVal === 'number' && Number.isFinite(currentVal)) {
         change = ((currentVal - firstVal) / firstVal) * 100;
       }
     }
-    const changeStr = change > 0 ? `+${change.toFixed(1)}%` : `${change.toFixed(1)}%`;
+    const changeStr = change === null ? '—' : change > 0 ? `+${change.toFixed(1)}%` : `${change.toFixed(1)}%`;
     
     // UI Logic for icons and value colors
     const status = marker.interpretation.toLowerCase();

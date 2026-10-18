@@ -2,6 +2,7 @@ import { useMemo, useCallback, useState, useEffect } from 'react';
 import { BiomarkerObservation, Biomarker } from '../types/biomarker';
 import { getDocumentCategoryLabel } from '../services/conceptService';
 import { getFinalStatus, isAbnormal } from '../utils/biomarkerUtils';
+import { extractReferenceRange as extractRange } from '../utils/referenceRange';
 import { codeableText } from '../utils/textFormat';
 import { matchBiomarker } from '../utils/searchUtils';
 import biomarkerService from '../services/biomarkerService';
@@ -133,47 +134,6 @@ export function useBiomarkers({ documents = [], trendsData, observations = [] }:
   );
 
   // Robust helper to extract min/max from various possible data structures
-  const extractRange = (data: any) => {
-    if (!data) return { min: null, max: null };
-    
-    // 0. If it's a string, try to parse it (e.g. "4.5 - 6.0")
-    if (typeof data === 'string') {
-      const match = data.match(/([0-9.]+)\s*-\s*([0-9.]+)/);
-      if (match) {
-        return { min: parseFloat(match[1]), max: parseFloat(match[2]) };
-      }
-      const gtMatch = data.match(/>\s*([0-9.]+)/);
-      if (gtMatch) return { min: parseFloat(gtMatch[1]), max: null };
-      const ltMatch = data.match(/<\s*([0-9.]+)/);
-      if (ltMatch) return { min: null, max: parseFloat(ltMatch[1]) };
-      return { min: null, max: null };
-    }
-
-    // 1. Direct min/max (lab_reference_range style or flat)
-    let min = data.min ?? data.low ?? data.minimum ?? data.reference_range_min ?? data.biomarker_reference_range_min;
-    let max = data.max ?? data.high ?? data.maximum ?? data.reference_range_max ?? data.biomarker_reference_range_max;
-
-    // 2. FHIR style (list of objects with low/high)
-    if ((min === null || min === undefined) && Array.isArray(data) && data.length > 0) {
-      const first = data[0];
-      min = first.low?.value ?? first.min;
-      max = first.high?.value ?? first.max;
-      
-      // If still null, check if the first element has a 'text' or 'displayText'
-      if ((min === null || min === undefined) && (max === null || max === undefined) && first.text) {
-         return extractRange(first.text);
-      }
-    }
-
-    // 3. Nested value_quantity style (rare but possible in some FHIR variants)
-    if (typeof min === 'object' && min !== null) min = min.value;
-    if (typeof max === 'object' && max !== null) max = max.value;
-
-    return { 
-      min: min !== undefined ? (typeof min === 'string' ? parseFloat(min) : min) : null, 
-      max: max !== undefined ? (typeof max === 'string' ? parseFloat(max) : max) : null 
-    };
-  };
 
   const getRangeText = (min: number | null, max: number | null) => {
     if (min !== null && max !== null && !isNaN(min) && !isNaN(max)) return `${min} - ${max}`;
@@ -206,8 +166,8 @@ export function useBiomarkers({ documents = [], trendsData, observations = [] }:
           slug: key,
           method: current.method || null,
           value: {
-            raw: current.raw_value || current.value,
-            normalized: current.value
+            raw: current.display_value ?? current.raw_value ?? current.value,
+            normalized: current.display_value ?? current.value
           },
           unit: {
             rawSymbol: current.raw_unit || current.unit || '',
@@ -262,7 +222,8 @@ export function useBiomarkers({ documents = [], trendsData, observations = [] }:
         const stdRef = { ...standardRange, displayText: getRangeText(standardRange.min, standardRange.max) };
         const hasStandardRange = standardRange.min !== null || standardRange.max !== null;
         const sameUnit = !obs.normalized_unit || obs.normalized_unit === obs.value_quantity?.unit;
-        const normalizedRef = hasStandardRange || !sameUnit ? stdRef : rawRef;
+        const sourceTextOnly = Array.isArray(obs.reference_range) && obs.reference_range.some((r: any) => r.text) && rawRange.min === null && rawRange.max === null;
+        const normalizedRef = sourceTextOnly ? rawRef : hasStandardRange || !sameUnit ? stdRef : rawRef;
 
         // Value extraction — STATE biomarkers (valueCodeableConcept) take a
         // separate branch so the state code/display land in ``value.state``
@@ -282,8 +243,8 @@ export function useBiomarkers({ documents = [], trendsData, observations = [] }:
               stateSystem: stateValue.stateSystem,
             }
           : {
-              raw: obs.value_string ?? obs.raw_value ?? obs.value_quantity?.value ?? null,
-              normalized: obs.value_string ?? obs.normalized_value ?? obs.value_quantity?.value ?? null,
+              raw: obs.value_quantity?.comparator ? `${obs.value_quantity.comparator}${obs.value_quantity.value}` : obs.value_string ?? obs.raw_value ?? obs.value_quantity?.value ?? null,
+              normalized: obs.value_quantity?.comparator ? `${obs.value_quantity.comparator}${obs.value_quantity.value}` : obs.value_string ?? obs.normalized_value ?? obs.value_quantity?.value ?? null,
             };
         const valueType: BiomarkerObservation['valueType'] = isState ? 'state' : 'quantity';
 

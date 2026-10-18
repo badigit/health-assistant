@@ -19,6 +19,7 @@ from app.services.fhir_helpers import (
 )
 from app.services.notification_manager import NotificationManager
 from app.services.observation_value_validator import validate_observation_value
+from app.services.observation_precision import validate_quantity, is_censored
 
 logger = logging.getLogger(__name__)
 
@@ -347,6 +348,7 @@ async def create_observation(
     # ORM-shape input (snake_case) — coerce types directly. The /fhir/* POST
     # endpoints speak ORM-shape; FHIR parsing lives only at the import boundary.
     value_quantity = observation_data.get("value_quantity")
+    validate_quantity(value_quantity)
     value_string = observation_data.get("value_string")
     value_codeable_concept = (
         observation_data.get("value_codeable_concept")
@@ -432,6 +434,8 @@ async def create_observation(
         method=(observation_data.get("method") or None),
         reference_range=observation_data.get("reference_range"),
     )
+    if is_censored(new_obs):
+        new_obs.raw_value = None
     assert_valid_fhir(new_obs)
 
     async with AsyncSessionLocal() as session:
@@ -442,7 +446,7 @@ async def create_observation(
     # Evaluate biomarker rules (event-driven notification source).
     patient_id = _patient_id
 
-    if patient_id and new_obs.biomarker_id:
+    if patient_id and new_obs.biomarker_id and not is_censored(new_obs):
         try:
             from app.services.notification_rule_service import evaluate_and_fire
 
@@ -469,12 +473,8 @@ async def update_observation(
 ) -> Observation | None:
     """Update an existing observation's editable fields.
 
-    Only the user-mutable fields are patched: ``value_quantity`` /
-    ``value_codeable_concept`` (branched on biomarker value_type),
-    ``effective_datetime``, ``method``, ``comment``, ``unit`` (raw).
-    Identity fields (``biomarker_id``, ``patient_id``, ``examination_id``,
-    ``code``, ``subject``) are never changed — to re-assign a biomarker,
-    delete + re-create.
+    Values, references and the tenant-validated biomarker association may
+    change. Patient, examination, source document and original code stay fixed.
 
     The update re-validates the value against the linked biomarker
     definition (same contract as ``create_observation``).
@@ -503,12 +503,18 @@ async def update_observation(
             return None
 
         # Resolve the biomarker definition for value-shape validation.
-        _biomarker_id = obs.biomarker_id
+        _biomarker_id = updates.get("biomarker_id", obs.biomarker_id)
         _biomarker = None
         if _biomarker_id:
             from app.models.biomarker_model import BiomarkerDefinition
 
             _biomarker = await session.get(BiomarkerDefinition, _biomarker_id)
+            if _biomarker is None or (
+                _biomarker.tenant_id is not None
+                and str(_biomarker.tenant_id) != str(obs.tenant_id)
+            ):
+                from app.services.observation_value_validator import InvalidObservationValue
+                raise InvalidObservationValue("Biomarker is not available in this tenant")
 
         # ---- value[x] patching ----
         value_quantity = updates.get("value_quantity")
@@ -520,7 +526,9 @@ async def update_observation(
 
         # Validate only if a new value is supplied; partial updates that
         # leave the value alone are allowed.
-        if value_quantity is not None or value_codeable_concept is not None:
+        value_keys = {"value_quantity", "value_string", "value_codeable_concept", "valueCodeableConcept", "component"}
+        if value_keys.intersection(updates):
+            validate_quantity(value_quantity)
             validate_observation_value(
                 _biomarker,
                 value_quantity=value_quantity,
@@ -529,15 +537,13 @@ async def update_observation(
                 component=updates.get("component"),
             )
 
-            obs.value_quantity = (
-                value_quantity if value_quantity is not None else obs.value_quantity
-            )
-            obs.value_codeable_concept = (
-                value_codeable_concept
-                if value_codeable_concept is not None
-                else obs.value_codeable_concept
-            )
-            obs.value_string = updates.get("value_string", obs.value_string)
+            obs.value_quantity = value_quantity
+            obs.value_codeable_concept = value_codeable_concept
+            obs.value_string = updates.get("value_string")
+            obs.component = updates.get("component")
+            obs.raw_value = value_quantity.get("value") if value_quantity else None
+            obs.normalized_value = None
+            obs.relative_score = None
 
             # Recompute raw_value for QUANTITY biomarkers.
             if (
@@ -550,6 +556,27 @@ async def update_observation(
                 if new_raw is not None:
                     obs.raw_value = new_raw
 
+        if "biomarker_id" in updates:
+            validate_observation_value(
+                _biomarker, value_quantity=obs.value_quantity,
+                value_string=obs.value_string,
+                value_codeable_concept=obs.value_codeable_concept,
+                component=obs.component,
+            )
+            obs.biomarker_id = _biomarker.id if _biomarker else None
+            obs.biomarker = _biomarker
+            obs.normalized_value = None
+            obs.relative_score = None
+        if "reference_range" in updates:
+            obs.reference_range = updates["reference_range"]
+            obs.lab_reference_range = None
+            obs.relative_score = None
+        if "interpretation" in updates:
+            obs.interpretation = _normalize_interpretation(updates["interpretation"])
+        if is_censored(obs):
+            obs.raw_value = None
+            obs.normalized_value = None
+            obs.relative_score = None
         # ---- scalar field patches ----
         if "effective_datetime" in updates:
             obs.effective_datetime = _parse_datetime(updates["effective_datetime"])
@@ -562,6 +589,7 @@ async def update_observation(
                 or updates.get("note")
             )
 
+        assert_valid_fhir(obs)
         await session.commit()
         await session.refresh(obs)
         return obs
@@ -704,7 +732,7 @@ async def list_observations(
         query = (
             select(Observation)
             .where(combined)
-            .order_by(Observation.effective_datetime.desc().nullslast())
+            .order_by(Observation.effective_datetime.desc().nullslast(), Observation.id.desc())
             .limit(limit)
             .offset(offset)
         )

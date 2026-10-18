@@ -9,6 +9,7 @@ import { updateObservation } from '../../services/observationService';
 import biomarkerService from '../../services/biomarkerService';
 import type { Biomarker, Unit, AllowedState } from '../../types/biomarker';
 import type { Observation } from '../../types/observation';
+import { parseQuantityInput } from '../../utils/quantityInput';
 
 interface Props {
   isOpen: boolean;
@@ -66,7 +67,7 @@ export const EditBiomarkerReadingModal: React.FC<Props> = ({
       value = coding?.code || '';
     } else {
       value = observation.value_quantity?.value != null
-        ? String(observation.value_quantity.value)
+        ? `${observation.value_quantity.comparator ?? ''}${observation.value_quantity.value}`
         : (observation.raw_value != null ? String(observation.raw_value) : '');
     }
 
@@ -120,12 +121,11 @@ export const EditBiomarkerReadingModal: React.FC<Props> = ({
         };
       } else {
         updates.value_quantity = {
-          value: parseFloat(formData.value),
+          ...parseQuantityInput(formData.value),
           unit: formData.unit || biomarker.preferred_unit_symbol,
           system: 'http://unitsofmeasure.org',
           code: formData.unit || biomarker.preferred_unit_symbol,
         };
-        updates.raw_value = parseFloat(formData.value);
       }
 
       // Timestamp (combine date + time → UTC ISO).
@@ -225,8 +225,8 @@ export const EditBiomarkerReadingModal: React.FC<Props> = ({
                 </select>
               ) : (
                 <input
-                  type="number"
-                  step="any"
+                  type="text"
+                  inputMode="decimal"
                   placeholder="0.00"
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-dark-bg border-none rounded-xl text-gray-900 dark:text-dark-text focus:ring-2 focus:ring-blue-500/20 font-bold"
                   value={formData.value}

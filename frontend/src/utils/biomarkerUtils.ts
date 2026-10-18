@@ -1,6 +1,7 @@
 import { BiomarkerObservation } from '../types/biomarker';
 import type { Observation } from '../types/observation';
 import { codeableText } from './textFormat';
+import { extractReferenceRange } from './referenceRange';
 
 const numericValue = (value: unknown): number => {
   if (typeof value === 'number') return value;
@@ -22,6 +23,7 @@ export function computeStatus(
   interpretation: string | null | undefined,
 ): string {
   const val = numericValue(rawVal);
+  if (typeof rawVal === 'string' && /^(?:<=|>=|<|>|≤|≥)/.test(rawVal.trim())) return 'Unknown';
 
   // 1. Range based check (Most accurate)
   if (val !== null && val !== undefined && !isNaN(val)) {
@@ -64,14 +66,13 @@ export const getFinalStatus = (b: BiomarkerObservation): string => {
  */
 export const getObservationStatus = (o: Observation | null | undefined): string => {
   if (!o) return 'Normal';
+  if (o.value_quantity?.comparator) return 'Unknown';
   const val = o.normalized_value ?? o.raw_value ?? o.value_quantity?.value;
   let min: number | null | undefined;
   let max: number | null | undefined;
-  const range = o.lab_reference_range;
-  if (range && typeof range === 'object') {
-    min = (range as any).min ?? (range as any).low?.value;
-    max = (range as any).max ?? (range as any).high?.value;
-  }
+  const range = extractReferenceRange(o.lab_reference_range ?? o.reference_range);
+  min = range.min;
+  max = range.max;
   if (min == null) min = o.biomarker_reference_range_min;
   if (max == null) max = o.biomarker_reference_range_max;
   return computeStatus(val, min, max, codeableText(o.interpretation));

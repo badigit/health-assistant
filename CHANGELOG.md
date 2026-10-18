@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Preserve quantity comparators in examination results and editing; censored bounds are excluded from numeric trend samples and cached normalization.
+- Update observation reference ranges and catalog associations with value validation and tenant isolation, without replacing source records.
+- Keep observation pagination stable when measurement timestamps are equal.
+- Parse only complete, unambiguous reference intervals; multi-threshold clinical explanations no longer produce invented ranges.
+
 ### Added
 - Russian interface language for core patient records, biomarkers, examinations, documents, navigation and general settings; untranslated sections fall back to English.
 - Tenant and user biomarker display modes: stored numeric precision without rounding or padded zeros, and optional trailing-zero suppression for fixed precision.
