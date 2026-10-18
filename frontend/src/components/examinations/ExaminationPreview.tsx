@@ -13,7 +13,7 @@ import { ExaminationAIActions } from '../ui/ExaminationAIActions';
 import { MedicationAIActions } from '../ui/MedicationAIActions';
 import { AuthenticatedThumbnail } from '../ui/AuthenticatedThumbnail';
 import { ActiveTaskBadge } from '../ui/ActiveTaskBadge';
-import { isAbnormal, formatBiomarkerValue } from '../../utils/biomarkerUtils';
+import { isAbnormal, formatObservationDisplay } from '../../utils/biomarkerUtils';
 import { useBiomarkerPrecisionProfile } from '../../hooks/useBiomarkerPrecision';
 import { stripHtml } from '../../utils/examinationUtils';
 import { useBiomarkers } from '../../hooks/useBiomarkers';
@@ -282,7 +282,9 @@ export const ExaminationPreview: React.FC<ExaminationPreviewProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50 dark:divide-dark-border">
-                    {augmentedBiomarkers.map((b) => (
+                    {augmentedBiomarkers.map((b) => {
+                    const display = formatObservationDisplay({ ...b, value: { ...b.value, normalized: null } }, precisionProfile);
+                    return (
                     <tr key={b.id} className="hover:bg-gray-50 dark:hover:bg-dark-bg transition-colors group/row">
                       <td className="px-6 py-4 text-sm font-bold text-gray-900 dark:text-dark-text flex items-center">
                         {b.definitionId ? (
@@ -303,15 +305,16 @@ export const ExaminationPreview: React.FC<ExaminationPreviewProps> = ({
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        <span className="font-bold text-blue-600 dark:text-blue-400">{formatBiomarkerValue(b.value.raw, precisionProfile)}</span>
-                        <span className="ml-1 text-xs text-gray-400 dark:text-dark-muted">{b.unit.rawSymbol}</span>
+                        <span className="font-bold text-blue-600 dark:text-blue-400">{display.value}</span>
+                        <span className="ml-1 text-xs text-gray-400 dark:text-dark-muted">{display.unit}</span>
                         {isAbnormal(b.interpretation) && (
                           <span className="ml-2 text-[10px] font-bold text-red-500 uppercase">({b.interpretation})</span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-xs text-gray-400 dark:text-dark-muted font-medium">{b.referenceRange.displayText}</td>
                     </tr>
-                  ))}
+                    );
+                    })}
                 </tbody>
               </table>
               </div>
