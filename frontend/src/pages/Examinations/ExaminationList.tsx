@@ -116,7 +116,7 @@ function ExaminationList() {
     });
   };
 
-  const fetchExams = async (isInitial = true) => {
+  const fetchExams = async (isInitial = true, requestedOffset = 0) => {
     if (isInitial) {
       setOffset(0);
       
@@ -141,7 +141,7 @@ function ExaminationList() {
     }
 
     try {
-      const currentOffset = isInitial ? 0 : offset;
+      const currentOffset = isInitial ? 0 : requestedOffset;
       const [data, cats] = await Promise.all([
         getExaminations(currentPatient?.id, LIMIT, currentOffset),
         getExaminationCategories() 
@@ -196,7 +196,7 @@ function ExaminationList() {
       }
 
       setHasMore(data.length === LIMIT);
-      if (!isInitial) setOffset((prev: number) => prev + LIMIT);
+      setOffset(currentOffset);
 
       if (isInitial && data.length > 0 && currentPatient?.id) {
          setTimeout(() => {
@@ -214,9 +214,7 @@ function ExaminationList() {
 
   const handleLoadMore = () => {
     if (!loadingMore && hasMore) {
-      const nextOffset = offset + LIMIT;
-      setOffset(nextOffset);
-      fetchExams(false);
+      fetchExams(false, offset + LIMIT);
     }
   };
 
