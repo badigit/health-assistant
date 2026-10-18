@@ -18,6 +18,27 @@ const PROFILE: BiomarkerPrecisionProfile = {
   below_1: 3,
 };
 
+describe('stored numeric precision', () => {
+  const stored = { ...PROFILE, mode: 'stored' as const };
+  it.each([
+    [97.5, '97.5'], [36.6, '36.6'], [4.25, '4.25'],
+    [140, '140'], [0.09, '0.09'], [1.23456789, '1.23456789'],
+    [0, '0'], [-4.256, '-4.256'], ['4.200', '4.2'],
+    [null, '--'], [undefined, '--'], ['', '--'], ['Positive', 'Positive'],
+  ])('preserves %s without adding zeros: %s', (value, expected) => {
+    expect(formatBiomarkerValue(value, stored)).toBe(expected);
+  });
+  it('can hide fixed-mode zeros while retaining configured rounding', () => {
+    const trimmed = { ...PROFILE, default: 2, trimTrailingZeros: true };
+    expect(formatBiomarkerValue(140, trimmed)).toBe('140');
+    expect(formatBiomarkerValue(97.5, trimmed)).toBe('97.5');
+    expect(formatBiomarkerValue(4.25, trimmed)).toBe('4.3');
+    expect(formatBiomarkerValue(0.09, trimmed)).toBe('0.09');
+    expect(formatBiomarkerValue(-0.001, trimmed)).toBe('-0.001');
+    expect(formatBiomarkerValue(0, trimmed)).toBe('0');
+  });
+});
+
 describe('formatBiomarkerValue', () => {
   it('returns "--" for null/undefined/empty', () => {
     expect(formatBiomarkerValue(null, PROFILE)).toBe('--');

@@ -14,6 +14,8 @@ const DEFAULT_PRECISION_BELOW_3 = 2;
 const DEFAULT_PRECISION_BELOW_1 = 3;
 
 const EFFECTIVE_TO_FIELD: Record<string, string> = {
+  'appearance.biomarker_display_mode': 'biomarkerDisplayMode',
+  'appearance.trim_trailing_zeros': 'trimTrailingZeros',
   'appearance.biomarker_precision': 'biomarkerPrecision',
   'appearance.precision_below_30': 'precisionBelow30',
   'appearance.precision_below_10': 'precisionBelow10',
@@ -61,6 +63,8 @@ interface SettingsState {
   unitSystem: 'metric' | 'imperial';
   showReferenceRanges: boolean;
   biomarkerPrecision: number;
+  biomarkerDisplayMode: 'fixed' | 'stored';
+  trimTrailingZeros: boolean;
   precisionBelow30: number;
   precisionBelow10: number;
   precisionBelow3: number;
@@ -121,6 +125,8 @@ export const useSettingsStore = create<SettingsState>()(
       unitSystem: FIELD_DEFAULTS.unitSystem,
       showReferenceRanges: FIELD_DEFAULTS.showReferenceRanges,
       biomarkerPrecision: DEFAULT_PRECISION,
+      biomarkerDisplayMode: 'fixed',
+      trimTrailingZeros: false,
       precisionBelow30: DEFAULT_PRECISION_BELOW_30,
       precisionBelow10: DEFAULT_PRECISION_BELOW_10,
       precisionBelow3: DEFAULT_PRECISION_BELOW_3,
@@ -251,6 +257,8 @@ export const useSettingsStore = create<SettingsState>()(
         unitSystem: state.unitSystem,
         showReferenceRanges: state.showReferenceRanges,
         biomarkerPrecision: state.biomarkerPrecision,
+        biomarkerDisplayMode: state.biomarkerDisplayMode,
+        trimTrailingZeros: state.trimTrailingZeros,
         precisionBelow30: state.precisionBelow30,
         precisionBelow10: state.precisionBelow10,
         precisionBelow3: state.precisionBelow3,

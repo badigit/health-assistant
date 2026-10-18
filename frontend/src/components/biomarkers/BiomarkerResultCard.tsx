@@ -17,6 +17,7 @@ import {
   formatBiomarkerValue,
 } from '../../utils/biomarkerUtils';
 import type { BiomarkerObservation } from '../../types/biomarker';
+import { useBiomarkerPrecisionProfile } from '../../hooks/useBiomarkerPrecision';
 
 export interface BiomarkerResultCardProps {
   b: BiomarkerObservation;
@@ -24,6 +25,7 @@ export interface BiomarkerResultCardProps {
 
 export const BiomarkerResultCard: React.FC<BiomarkerResultCardProps> = ({ b }) => {
   const { t } = useTranslation();
+  const precisionProfile = useBiomarkerPrecisionProfile();
   const status = getFinalStatus(b);
   const valueNum = b.value.normalized ?? b.value.raw;
 
@@ -48,7 +50,7 @@ export const BiomarkerResultCard: React.FC<BiomarkerResultCardProps> = ({ b }) =
               : 'text-red-600 dark:text-red-400'
           }`}
         >
-          {formatBiomarkerValue(valueNum)}
+          {formatBiomarkerValue(valueNum, precisionProfile)}
         </span>
         <span className="text-xs text-gray-400 font-medium">
           {b.unit.normalizedSymbol || b.unit.rawSymbol}

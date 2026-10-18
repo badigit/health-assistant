@@ -17,6 +17,20 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+.biomarker-collection[data-density='compact'] .biomarker-table th {
+  padding: 0.5rem 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.biomarker-collection[data-density='compact'] .biomarker-table td {
+  padding: 0.5rem 0.75rem;
+}
+
+.biomarker-collection[data-density='compact'] .biomarker-table td .text-lg {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
 @theme {
   --breakpoint-xs: 480px;
 

@@ -58,6 +58,32 @@ ALL_LEVELS = [SettingLevel.SYSTEM, SettingLevel.TENANT, SettingLevel.USER]
 SETTINGS_REGISTRY: List[SettingDefinition] = [
     # ---------------- Appearance / Visualization ----------------
     SettingDefinition(
+        key="appearance.biomarker_display_mode",
+        category="appearance",
+        type=SettingType.ENUM,
+        default="fixed",
+        storage=SettingStorage.TIERED,
+        allowed_levels=ALL_LEVELS,
+        label_key="settings.biomarker_display_mode",
+        description_key="settings.biomarker_display_mode_desc",
+        options=[
+            SettingEnumOption(value="stored", label_key="settings.display_stored"),
+            SettingEnumOption(value="fixed", label_key="settings.display_fixed"),
+        ],
+        order=8,
+    ),
+    SettingDefinition(
+        key="appearance.trim_trailing_zeros",
+        category="appearance",
+        type=SettingType.BOOLEAN,
+        default=False,
+        storage=SettingStorage.TIERED,
+        allowed_levels=ALL_LEVELS,
+        label_key="settings.trim_trailing_zeros",
+        description_key="settings.trim_trailing_zeros_desc",
+        order=9,
+    ),
+    SettingDefinition(
         key="appearance.biomarker_precision",
         category="appearance",
         type=SettingType.INTEGER,

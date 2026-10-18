@@ -133,6 +133,8 @@ export const formatUnit = (unit: string): string => {  if (!unit) return '';
  * profile that picks precision based on the absolute value's magnitude.
  */
 export interface BiomarkerPrecisionProfile {
+  mode?: 'fixed' | 'stored';
+  trimTrailingZeros?: boolean;
   /** precision for |value| >= 30 */
   default: number;
   /** precision for 10 <= |value| < 30 */
@@ -172,8 +174,12 @@ export const formatBiomarkerValue = (
   if (value === null || value === undefined || value === '') return '--';
   const num = typeof value === 'number' ? value : parseFloat(value);
   if (!isFinite(num)) return String(value);
+  if (typeof precision !== 'number' && precision.mode === 'stored') return String(num);
   const p = getPrecisionForValue(num, precision);
-  return num.toFixed(p);
+  const formatted = num.toFixed(p);
+  return typeof precision !== 'number' && precision.trimTrailingZeros
+    ? formatted.replace(/(\.\d*?[1-9])0+$|\.0+$/, '$1')
+    : formatted;
 };
 
 /**
