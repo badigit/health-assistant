@@ -13,6 +13,9 @@ from app.services.seed_service import seed_service
 # seed file is the source of truth — this guards against accidental deletion
 # of core clinical codes.
 EXPECTED_CORE_STATES = {
+    # Preserve literal categorical phenotypes without converting them to a number.
+    ("source-phenotype-ccee", "urn:health-assistant:source-states"),
+    ("source-kell-negative", "urn:health-assistant:source-states"),
     # Microbiology / serology
     ("POS", "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation"),
     ("NEG", "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation"),

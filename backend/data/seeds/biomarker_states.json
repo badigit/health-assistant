@@ -49,5 +49,7 @@
     ,{"slug":"source-single","code":"source-single","system":"urn:health-assistant:source-states","display":"Единичные","category":"laboratory","sort_order":112}
     ,{"slug":"source-scant","code":"source-scant","system":"urn:health-assistant:source-states","display":"Скудно","category":"laboratory","sort_order":113}
     ,{"slug":"source-physiological","code":"source-physiological","system":"urn:health-assistant:source-states","display":"Присутствует в физиологической концентрации","category":"laboratory","sort_order":114}
+    ,{"slug":"source-phenotype-ccee","code":"source-phenotype-ccee","system":"urn:health-assistant:source-states","display":"ссЕе","category":"immunohematology","sort_order":115}
+    ,{"slug":"source-kell-negative","code":"source-kell-negative","system":"urn:health-assistant:source-states","display":"К-","category":"immunohematology","sort_order":116}
   ]
 }
