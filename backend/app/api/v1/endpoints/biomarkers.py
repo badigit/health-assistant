@@ -288,6 +288,8 @@ async def create_biomarker(
 
     new_bio = BiomarkerDefinition(
         slug=biomarker.slug,
+        coding_system=biomarker.coding_system,
+        code=biomarker.code,
         name=biomarker.name,
         class_concept_id=class_concept_id,
         aliases=biomarker.aliases,
