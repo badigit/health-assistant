@@ -7,6 +7,7 @@ from app.core.security import get_current_user
 from app.core.database import get_db
 from app.schemas.telemetry import TelemetrySyncPayload
 from app.schemas.user import TokenData
+from app.services.access import check_patient_access
 from app.services.telemetry_service import (
     get_telemetry_anomalies,
     get_telemetry_data,
@@ -26,6 +27,8 @@ async def upload_telemetry_data_endpoint(
     db: AsyncSession = Depends(get_db),
 ):
     """Sync time-series health data from a mobile device (Health Connect / HealthKit)."""
+    for patient_id in {p.patient_id for p in payload.points if p.patient_id}:
+        await check_patient_access(patient_id, current_user, db)
     try:
         uploaded = await upload_telemetry_data(
             db, payload.device_id, payload.points, current_user.tenant_id

@@ -14,7 +14,8 @@ import logging
 from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 from typing import Any
-from uuid import UUID
+from uuid import UUID, NAMESPACE_URL, uuid4, uuid5
+import json
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -92,8 +93,8 @@ async def upload_telemetry_data(
     rows: list[dict[str, Any]] = []
     for point in data_points:
         patient_uuid = _coerce_uuid(getattr(point, "patient_id", None))
-        rows.append(
-            {
+        row = {
+                "id": uuid4(),
                 "tenant_id": tenant_uuid,
                 "device_id": device_id,
                 "timestamp": point.timestamp,
@@ -102,7 +103,15 @@ async def upload_telemetry_data(
                 "unit": getattr(point, "unit", None),
                 "patient_id": patient_uuid,
             }
-        )
+        source_id = getattr(point, "source_id", None)
+        if source_id:
+            identity = json.dumps(
+                [str(tenant_uuid), device_id, str(patient_uuid), source_id,
+                 point.slug, point.value, getattr(point, "unit", None)],
+                separators=(",", ":"), allow_nan=False,
+            )
+            row["id"] = uuid5(NAMESPACE_URL, "telemetry-source-v1:" + identity)
+        rows.append(row)
 
     if not rows:
         return 0

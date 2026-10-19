@@ -1155,6 +1155,11 @@ async def get_biomarker_trends(
         # so we must guard against arbitrary strings here.
         safe_bucket = bucket if bucket in _ALLOWED_TELEMETRY_BUCKETS else "1 hour"
 
+        if patient_id:
+            table_name, time_col = "telemetry_data", "timestamp"
+            avg_expr, max_expr, min_expr = "AVG(value)", "MAX(value)", "MIN(value)"
+        patient_clause = "AND patient_id = CAST(:patient_id AS uuid)" if patient_id else ""
+
         sql = f"""
             SELECT
                 time_bucket_gapfill(
@@ -1172,6 +1177,7 @@ async def get_biomarker_trends(
               AND {time_col} >= CAST(:start_date AS timestamptz)
               AND {time_col} <= CAST(:end_date AS timestamptz)
               AND slug = :slug
+              {patient_clause}
             GROUP BY 1, device_id
             ORDER BY 1
         """
@@ -1184,6 +1190,7 @@ async def get_biomarker_trends(
                     "start_date": effective_start_date,
                     "end_date": effective_end_date,
                     "slug": slug,
+                    "patient_id": patient_id,
                 },
             )
             rows = res.all()
@@ -1222,7 +1229,7 @@ async def get_biomarker_trends(
                             "min_value": round(min_val, 2),
                             "unit": getattr(b_def, "preferred_unit_symbol", ""),
                             "name": b_def.name if b_def else slug,
-                            "status": "Normal",
+                            "status": "Unknown",
                             "biomarker_id": str(b_def.id) if b_def else None,
                             "reference_range_min": b_def.reference_range_min
                             if b_def

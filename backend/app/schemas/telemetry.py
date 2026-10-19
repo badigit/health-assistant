@@ -13,6 +13,10 @@ class TelemetryDataPoint(BaseModel):
     so the mapping is 1:1.
     """
 
+    source_id: Optional[str] = Field(
+        None, pattern=r"^[a-f0-9]{64}$",
+        description="SHA-256 identity of the complete source sample for retry-safe delivery",
+    )
     timestamp: datetime = Field(
         ..., description="ISO 8601 timestamp of the measurement"
     )

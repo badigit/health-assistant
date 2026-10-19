@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Make telemetry retries idempotent with optional source identities scoped to tenant, patient and device; validate explicit patient access before upload.
+- Filter telemetry charts by patient using attributed raw samples; do not label unassessed telemetry as normal.
 - Biomarker summaries show literal bounds and laboratory reference text, omit dimensionless unit suffixes, and average only exact samples using the configured precision.
 - Exclude censored and categorical results from numeric anomaly calculations while retaining literal values on dashboard trend cards.
 - Preserve quantity comparators in examination results and editing; censored bounds are excluded from numeric trend samples and cached normalization.
