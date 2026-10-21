@@ -167,8 +167,8 @@ export function useBiomarkers({ documents = [], trendsData, observations = [] }:
           slug: key,
           method: current.method || null,
           value: {
-            raw: current.display_value ?? current.raw_value ?? current.value,
-            normalized: current.display_value ?? current.value
+            raw: current.display_value ?? current.raw_value ?? current.latest_value ?? current.value,
+            normalized: current.display_value ?? current.latest_value ?? current.value
           },
           unit: {
             rawSymbol: current.raw_unit || current.unit || '',

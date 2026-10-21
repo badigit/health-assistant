@@ -61,6 +61,17 @@ function makeQuantityObservation(overrides: Partial<Observation> = {}): Observat
 }
 
 describe('useBiomarkers — STATE biomarker branch', () => {
+  it('shows the actual latest telemetry value with its measurement date', async () => {
+    const { useBiomarkers } = await import('../useBiomarkers');
+    const { result } = renderHook(() => useBiomarkers({ trendsData: { 'heart-rate': [
+      { date: '2026-01-01T00:00:00Z', latest_date: '2026-01-20T12:00:00Z',
+        value: 60, latest_value: 82, unit: '/min', name: 'Heart rate', source_type: 'telemetry', status: 'Unknown' },
+    ] } as any }));
+    await waitFor(() => expect(result.current.biomarkers).toHaveLength(1));
+    expect(result.current.biomarkers[0].value.raw).toBe(82);
+    expect(result.current.biomarkers[0].source.date).toBe('2026-01-20T12:00:00Z');
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });

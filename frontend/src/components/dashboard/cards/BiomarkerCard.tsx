@@ -191,9 +191,9 @@ export const BiomarkerCard = React.forwardRef((props: any, ref: any) => {
                 </div>
               </>
             )}
-          </div>
           {readingDate && <p className="mt-2 text-xs text-gray-500">{format(parseISO(readingDate), 'dd.MM.yyyy HH:mm')}</p>}
           {latestPoint?.aggregation === 'daily_total' && <p className="mt-1 text-xs text-gray-500">{t('biomarkers.daily_total', 'Итого за день')}{latestPoint.estimated ? ' ≈' : ''}</p>}
+          </div>
         </div>
 
         {!isEditMode && (
