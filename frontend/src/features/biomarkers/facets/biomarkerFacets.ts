@@ -33,7 +33,7 @@ export const biomarkerTelemetryFacet: FacetDefinition<Biomarker> = {
   icon: 'Activity',
   predicate: (item, value) => {
     if (value.kind !== 'toggle' || !value.on) return true;
-    return item.is_telemetry === true;
+    return item.is_telemetry === true || item.has_telemetry_sources === true;
   },
 };
 

@@ -12,6 +12,13 @@ import {
 const multi = (values: string[]): FilterValue => ({ kind: 'multi', values });
 const toggle = (on: boolean): FilterValue => ({ kind: 'toggle', on });
 
+it('includes a clinical definition linked to a telemetry source without changing storage type', () => {
+  const definition: Biomarker = {id:'clinical-pressure',slug:'pressure',name:'Pressure',aliases:[],
+    is_telemetry:false,has_telemetry_sources:true};
+  expect(biomarkerTelemetryFacet.predicate!(definition,toggle(true))).toBe(true);
+  expect(definition.is_telemetry).toBe(false);
+});
+
 const biomarkers: Biomarker[] = [
   { id: '1', slug: 'ldl', name: 'LDL', category: 'Lipids', coding_system: 'loinc', preferred_unit_symbol: 'mg/dL', is_telemetry: false, aliases: [] },
   { id: '2', slug: 'hdl', name: 'HDL', category: 'Lipids', coding_system: 'loinc', preferred_unit_symbol: 'mg/dL', is_telemetry: false, aliases: [] },

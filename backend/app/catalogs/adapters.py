@@ -697,6 +697,7 @@ class BiomarkerCatalogAdapter(BaseCatalogAdapter):
         )
         rows = (await db.execute(stmt)).all()
         items = [self._serialize(bio, sym) for bio, sym in rows]
+        await self._attach_telemetry_sources(db, tenant_id, items)
         return {"items": items, "total": total}
 
     async def get(
@@ -714,7 +715,21 @@ class BiomarkerCatalogAdapter(BaseCatalogAdapter):
         if row is None:
             return None
         bio, sym = row
-        return self._serialize(bio, sym)
+        item = self._serialize(bio, sym)
+        await self._attach_telemetry_sources(db, tenant_id, [item])
+        return item
+
+    async def _attach_telemetry_sources(self, db, tenant_id, items):
+        slugs = {item['slug'] for item in items}
+        if not slugs:
+            return
+        target = BiomarkerDefinition.meta_data['canonical_slug'].astext
+        linked = set((await db.execute(select(target).where(
+            *self._filters(tenant_id, None),
+            BiomarkerDefinition.is_telemetry.is_(True), target.in_(slugs),
+        ).distinct())).scalars().all())
+        for item in items:
+            item['has_telemetry_sources'] = item['slug'] in linked
 
     # --- search ------------------------------------------------------------
 

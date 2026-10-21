@@ -81,6 +81,7 @@ export interface Biomarker {
   preferred_unit_symbol?: string;
   info?: string;
   is_telemetry?: boolean;
+  has_telemetry_sources?: boolean;
   reference_range_min?: number;
   reference_range_max?: number;
   reference_ranges?: BiomarkerReferenceRange[];

@@ -64,6 +64,14 @@ class CatalogSourceTest(unittest.IsolatedAsyncioTestCase):
             await db.execute(text("UPDATE biomarker_definitions SET aliases='[\"unique-source-alias\"]' WHERE slug='target'"))
             found = await adapter.list(db,tenant,search='unique-source-alias')
             self.assertEqual([i['slug'] for i in found['items']],['target'])
+            await db.execute(text("UPDATE biomarker_definitions SET is_telemetry=true WHERE slug IN ('linked','own-link')"))
+            await db.execute(text("UPDATE biomarker_definitions SET is_telemetry=true,meta_data='{\"canonical_slug\":\"empty\"}' WHERE slug='foreign-target'"))
+            annotated = {item['slug']:item for item in (await adapter.list(db,tenant))['items']}
+            self.assertTrue(annotated['target']['has_telemetry_sources'])
+            self.assertTrue(annotated['own-target']['has_telemetry_sources'])
+            self.assertFalse(annotated['empty']['has_telemetry_sources'])
+            self.assertFalse(annotated['target']['is_telemetry'])
+            self.assertTrue((await adapter.get(db,tenant,annotated['target']['id']))['has_telemetry_sources'])
             await db.rollback()
 
 
