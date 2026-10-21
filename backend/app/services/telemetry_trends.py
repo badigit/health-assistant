@@ -70,7 +70,7 @@ async def read_telemetry_trends(db, tenant_id, patient_id, definitions, requeste
     gauges = {slug: spec for slug, spec in selected.items() if slug not in intervals}
     if gauges:
         statement = text(
-            "SELECT slug,device_id,time_bucket(CAST(:bucket AS interval),timestamp,:zone) AS bucket,"
+            "SELECT slug,device_id,time_bucket(CAST(CAST(:bucket AS text) AS interval),timestamp,CAST(:zone AS text)) AS bucket,"
             "AVG(value) AS mean,MAX(value) AS high,MIN(value) AS low,"
             "last(value,timestamp) AS latest,MAX(timestamp) AS latest_at,"
             "last(source_name,timestamp) AS source,count(*) AS samples" + base +
