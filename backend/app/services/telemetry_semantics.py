@@ -57,9 +57,9 @@ LEGACY_SLUGS = {
 def source_priority(name):
     """Prefer wearable readings, then phone, then imported copies."""
     label = (name or '').lower()
-    if 'import' in label:
+    if 'import' in label or 'импорт' in label:
         return 10
-    if 'watch' in label:
+    if 'watch' in label or label == 'часы':
         return 100
     if 'phone' in label:
         return 80

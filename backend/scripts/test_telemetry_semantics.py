@@ -10,6 +10,10 @@ def interval(start, end, value, source='Watch', metric='steps', identity=None):
 
 
 class SemanticsTest(unittest.TestCase):
+    def test_localized_watch_source_has_wearable_priority(self):
+        self.assertGreater(source_priority('Часы'), source_priority('iPhone'))
+        self.assertLess(source_priority('Импорт здоровья'), source_priority('iPhone'))
+
     def test_all_35_source_metrics_have_distinct_specific_targets(self):
         self.assertEqual(len(APPLE_METRICS), 35)
         self.assertEqual(len({spec[0] for spec in APPLE_METRICS.values()}), 35)
