@@ -10,6 +10,7 @@ import { StickyToolbar } from '../../components/ui/StickyToolbar';
 import { TabInfoButton } from '../../components/ui/TabInfoButton';
 import biomarkerService from '../../services/biomarkerService';
 import { getBiomarkerTrends } from '../../services/analyticsService';
+import { latestBiomarkerPoint } from '../../utils/biomarkerIdentity';
 import { usePatientStore } from '../../store/slices/patientSlice';
 import { useUIStore } from '../../store/slices/uiSlice';
 import { useTabScroll } from '../../hooks/useTabScroll';
@@ -191,14 +192,14 @@ const BiomarkerDetail: React.FC = () => {
   const headerIcon = React.useMemo(() => <Activity className="w-8 h-8" />, []);
 
   const interpretation = React.useMemo(() => {
-    if (!trends || trends.length === 0 || !biomarker) return 'Normal';
-    const latest = trends[trends.length - 1];
+    const latest = latestBiomarkerPoint<any>(trends);
+    if (!latest || !biomarker) return 'Unknown';
     const mockObs: any = {
-      value: { raw: latest.value },
-      interpretation: latest.status || 'Normal',
+      value: { raw: latest.latest_value ?? latest.value },
+      interpretation: latest.status || 'Unknown',
       referenceRange: {
-        min: biomarker.reference_range_min,
-        max: biomarker.reference_range_max,
+        min: latest.source_type === 'telemetry' ? latest.reference_range_min : latest.reference_range_min ?? biomarker.reference_range_min,
+        max: latest.source_type === 'telemetry' ? latest.reference_range_max : latest.reference_range_max ?? biomarker.reference_range_max,
         displayText: biomarker.reference_range_min != null || biomarker.reference_range_max != null
           ? `${biomarker.reference_range_min ?? '0'} - ${biomarker.reference_range_max ?? '∞'}`
           : '--'

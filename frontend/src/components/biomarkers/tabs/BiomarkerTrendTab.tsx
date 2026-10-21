@@ -18,6 +18,7 @@ import { StateTimeline } from '../StateTimeline';
 import { InfoTooltip } from '../../ui/InfoTooltip';
 import { useSettingsStore } from '../../../store/slices/settingsSlice';
 import type { Biomarker } from '../../../types/biomarker';
+import { datedBiomarkerPoints } from '../../../utils/biomarkerIdentity';
 import {
   TIME_RANGES,
   AGGREGATION_OPTIONS,
@@ -44,6 +45,7 @@ export const BiomarkerTrendTab: React.FC<BiomarkerTrendTabProps> = ({
 }) => {
   const { showReferenceRanges, setShowReferenceRanges } = useSettingsStore();
   const isState = biomarker.value_type === 'state';
+  const chartTrends = datedBiomarkerPoints(filteredTrends);
 
   // Chart-only display preferences (local to this tab).
   // For STATE biomarkers these don't apply (no line/area/bar reference range
@@ -140,14 +142,14 @@ export const BiomarkerTrendTab: React.FC<BiomarkerTrendTabProps> = ({
         </div>
 
       <div className="h-[400px]">
-        {filteredTrends.length > 0 ? (
+        {chartTrends.length > 0 ? (
           isState ? (
             <div className="h-full flex flex-col justify-center">
-              <StateTimeline points={filteredTrends} height={400} />
+              <StateTimeline points={chartTrends} height={400} />
             </div>
           ) : (
             <LineChart
-              data={filteredTrends.map(trendPoint => ({
+              data={chartTrends.map(trendPoint => ({
                 name: new Date(trendPoint.date).toLocaleDateString(),
                 tooltipLabel: new Date(trendPoint.date).toLocaleString(undefined, {
                   year: 'numeric',

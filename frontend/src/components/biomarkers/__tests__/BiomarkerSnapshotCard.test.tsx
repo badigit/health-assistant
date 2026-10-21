@@ -11,6 +11,14 @@ const marker = { id: 'q', slug: 'density', name: 'Density', aliases: [], value_t
 const precision = { mode: 'stored', default: 0, below_30: 1, below_10: 1, below_3: 2, below_1: 3 } as BiomarkerPrecisionProfile;
 
 describe('biomarker summaries', () => {
+  it.each([BiomarkerSnapshotCard, BiomarkerKpiStrip])('uses actual latest readings in mixed clinical and device history', Component => {
+    render(<Component biomarker={marker} trends={[
+      { date: '', value: 900 },
+      { date: '2026-01-01', latest_date: '2026-01-20', value: 60, latest_value: 82 },
+      { date: '2026-01-10', value: 70 },
+    ]} precisionProfile={precision} interpretation="Unknown" />);
+    expect(screen.getByText('82')).toBeTruthy();
+  });
   it.each([BiomarkerSnapshotCard, BiomarkerKpiStrip])('shows a source bound and reference without undefined', Component => {
     const { container } = render(<Component biomarker={marker} trends={[{ value: null, display_value: '<7', comparator: '<', unit: 'mg/L', reference_range_text: '0–8 mg/L', date: new Date().toISOString() }]} precisionProfile={precision} interpretation="Unknown" />);
     expect(screen.getByText('<7')).toBeTruthy();

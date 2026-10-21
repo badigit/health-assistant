@@ -17,3 +17,7 @@ export function latestBiomarkerPoint<T extends { date?: string; latest_date?: st
     timestamp(point) > timestamp(latest)
       ? point : latest);
 }
+
+export function datedBiomarkerPoints<T extends { date?: string }>(points: T[]): T[] {
+  return points.filter(point => Number.isFinite(Date.parse(point.date || '')));
+}

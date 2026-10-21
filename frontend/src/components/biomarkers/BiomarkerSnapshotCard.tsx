@@ -19,6 +19,7 @@ import {
   type BiomarkerPrecisionProfile,
 } from '../../utils/biomarkerUtils';
 import type { AllowedState, Biomarker } from '../../types/biomarker';
+import { latestBiomarkerPoint } from '../../utils/biomarkerIdentity';
 
 export interface BiomarkerSnapshotCardProps {
   biomarker: Biomarker;
@@ -35,8 +36,8 @@ export const BiomarkerSnapshotCard: React.FC<BiomarkerSnapshotCardProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  const latest = trends.length > 0 ? trends[trends.length - 1] : null;
-  const previous = trends.length > 1 ? trends[trends.length - 2] : null;
+  const latest = latestBiomarkerPoint<any>(trends);
+  const previous = latestBiomarkerPoint<any>(trends.filter(point => point !== latest));
   const hasReference = biomarker.reference_range_min != null || biomarker.reference_range_max != null || (latest?.reference_range_text && latest.reference_range_text !== '--');
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
@@ -79,7 +80,7 @@ export const BiomarkerSnapshotCard: React.FC<BiomarkerSnapshotCardProps> = ({
               latest ? getStatusTextColor(interpretation) : 'text-gray-900 dark:text-dark-text'
             }`}
           >
-            {latest ? formatBiomarkerValue(latest.display_value ?? latest.value, precisionProfile) : '--'}
+            {latest ? formatBiomarkerValue(latest.display_value ?? latest.latest_value ?? latest.value, precisionProfile) : '--'}
           </span>
           <span className="text-sm font-bold text-gray-400 dark:text-dark-muted uppercase">
             {latest

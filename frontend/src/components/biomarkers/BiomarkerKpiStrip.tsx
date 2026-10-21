@@ -14,6 +14,7 @@ import {
   type BiomarkerPrecisionProfile,
 } from '../../utils/biomarkerUtils';
 import type { Biomarker } from '../../types/biomarker';
+import { latestBiomarkerPoint } from '../../utils/biomarkerIdentity';
 
 export interface BiomarkerKpiStripProps {
   biomarker: Biomarker;
@@ -27,7 +28,7 @@ export const BiomarkerKpiStrip: React.FC<BiomarkerKpiStripProps> = ({
   precisionProfile,
 }) => {
   const { t } = useTranslation();
-  const latest = trends.length > 0 ? trends[trends.length - 1] : null;
+  const latest = latestBiomarkerPoint<any>(trends);
   const avg = meanExactReadings(trends);
 
   return (
@@ -38,7 +39,7 @@ export const BiomarkerKpiStrip: React.FC<BiomarkerKpiStripProps> = ({
         </p>
         <div className="flex items-baseline space-x-1">
           <span className="text-xl font-black text-gray-900 dark:text-dark-text">
-            {latest ? formatBiomarkerValue(latest.display_value ?? latest.value, precisionProfile) : '--'}
+            {latest ? formatBiomarkerValue(latest.display_value ?? latest.latest_value ?? latest.value, precisionProfile) : '--'}
           </span>
           <span className="text-[10px] font-bold text-gray-400 dark:text-dark-muted uppercase">
             {latest

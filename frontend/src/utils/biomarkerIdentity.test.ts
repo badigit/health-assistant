@@ -1,8 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { resolveBiomarkerKey, latestBiomarkerPoint } from './biomarkerIdentity';
+import { resolveBiomarkerKey, latestBiomarkerPoint, datedBiomarkerPoints } from './biomarkerIdentity';
 import { computeStatus } from './biomarkerUtils';
 
 describe('Canonical wearable identity and latest reading', () => {
+  it('keeps undated history intact while excluding it from the time axis', () => {
+    const rows = [{ date: '', value: 140 }, { date: '2026-01-01', value: 134 }];
+    expect(datedBiomarkerPoints(rows)).toEqual([rows[1]]);
+    expect(rows).toHaveLength(2);
+  });
   it('resolves old English dashboard cards and source-slug cards to one canonical series', () => {
     const series = { 'systolic-bp': [{ name: 'Давление', aliases: ['Systolic blood pressure'], source_slugs: ['apple-health-systolic-bp'] }] };
     expect(resolveBiomarkerKey('Systolic blood pressure', series)).toBe('systolic-bp');
