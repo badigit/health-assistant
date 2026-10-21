@@ -6,8 +6,8 @@
  *                   view toggle + New. Replaces the old left rail so the list
  *                   + preview get the full remaining width. Item search is the
  *                   global page-search (header SearchLauncher) — this page opts
- *                   in via setIsPageSearchSupported and filters `items`
- *                   in-memory against `pageSearchTerm` (no local search box).
+ *                   in via setIsPageSearchSupported and searches the complete
+ *                   collection before display pagination (no local search box).
  *   List pane     — scrollable browser of items (selecting sets ?item=).
  *   Preview pane  — tabs (Info | Relations | custom) for the selected item,
  *                   rendered beside the list on desktop and as a full-screen
@@ -47,12 +47,12 @@ import { BiomarkerMigrationWatcher } from '../../components/biomarkers/Biomarker
 import { ScopeBadge } from '../../components/catalog/ScopeBadge';
 import {
   listCatalogTypes,
-  listCatalogItems,
   getCatalogItem,
   createCatalogItem,
   updateCatalogItem,
   deleteCatalogItem,
 } from '../../services/catalogService';
+import { loadCatalogCollection, matchesCatalogSearch } from '../../services/catalogCollection';
 import biomarkerService from '../../services/biomarkerService';
 import type { BiomarkerReferenceRange } from '../../types/biomarker';
 import type { CatalogItem, CatalogTypeMeta } from '../../types/catalog';
@@ -129,8 +129,9 @@ export const CatalogWorkspace: React.FC = () => {
 
   // Items (owned here so the browser, preview Info + Relations tabs share).
   const [items, setItems] = useState<CatalogItem[]>([]);
-  const [total, setTotal] = useState(0);
   const [itemsLoading, setItemsLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [linkedItem, setLinkedItem] = useState<CatalogItem | null>(null);
 
   // Anatomy-only: taxonomy-class options for the (server-side) class facet.
   // Fetched on type-switch; the kind facet for concepts uses static enum
@@ -235,12 +236,8 @@ export const CatalogWorkspace: React.FC = () => {
   const PAGE_SIZE = 50;
   const isMineScope = scopeFilter === 'mine';
 
-  // Backend pagination cursor (how many items the server has handed us),
-  // tracked separately from `items.length` because deep-link injection (see
-  // the effect below) prepends an out-of-page item. Using items.length as the
-  // next offset in that case would skip a real item, so load/loadMore advance
-  // this ref from the server response sizes instead.
-  const offsetRef = useRef(0);
+  const requestRef = useRef(0);
+  const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE);
   // Item ids that 404/403'd on the single-item fetch — don't keep retrying the
   // injection on every list mutation. Cleared on catalog-type change.
   const knownMissingRef = useRef<Set<string>>(new Set());
@@ -252,70 +249,36 @@ export const CatalogWorkspace: React.FC = () => {
 
   const load = useCallback(async () => {
     if (!activeType) return;
+    const request = ++requestRef.current;
     setItemsLoading(true);
+    setLoadError(false);
     try {
-      const resp = await listCatalogItems(activeType, {
-        // 'mine' is a client-side ownership filter over the user-scope set, so
-        // fetch it all in one shot (no pagination — offset would be wrong).
+      const collection = await loadCatalogCollection(activeType, {
         scope: isMineScope ? 'user' : scopeFilter || undefined,
         ...catalogFilter.serverParams,
         include: 'relations',
-        limit: isMineScope ? 500 : PAGE_SIZE,
-        offset: 0,
-      });
-      setItems(resp.items);
-      setTotal(resp.total);
-      offsetRef.current = resp.items.length;
+      }, () => request === requestRef.current);
+      if (!collection) return;
+      setItems(collection);
     } catch {
+      if (request !== requestRef.current) return;
       setItems([]);
-      setTotal(0);
-      offsetRef.current = 0;
+      setLoadError(true);
     } finally {
-      setItemsLoading(false);
+      if (request === requestRef.current) setItemsLoading(false);
     }
     // serverFilterKey (not serverParams) is the dep so toggling a client-side
     // facet doesn't refetch — only server-facet changes do.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeType, scopeFilter, serverFilterKey, isMineScope]);
 
-  const [loadingMore, setLoadingMore] = useState(false);
-  const loadMore = useCallback(async () => {
-    if (!activeType || loadingMore || isMineScope) return;
-    setLoadingMore(true);
-    try {
-      const resp = await listCatalogItems(activeType, {
-        scope: scopeFilter || undefined,
-        ...catalogFilter.serverParams,
-        include: 'relations',
-        limit: PAGE_SIZE,
-        offset: offsetRef.current,
-      });
-      offsetRef.current += resp.items.length;
-      // Dedup against what we already show: a deep-linked item is injected at
-      // the top of the list, so its natural copy would reappear on its real
-      // page — drop it there to avoid showing the card twice.
-      setItems((prev) => {
-        const seen = new Set(prev.map((it) => String(it.id)));
-        const fresh = resp.items.filter((it) => !seen.has(String(it.id)));
-        return fresh.length ? [...prev, ...fresh] : prev;
-      });
-    } catch {
-      /* ignore — keep what we have */
-    } finally {
-      setLoadingMore(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeType, scopeFilter, serverFilterKey, loadingMore, isMineScope]);
+  const loadMore = useCallback(() => setVisibleLimit((limit) => limit + PAGE_SIZE), []);
 
   useEffect(() => {
     load();
+    return () => { requestRef.current += 1; };
   }, [load]);
 
-  // Deep-link support: when arriving with ?item=Y and Y isn't in the loaded
-  // page (it lives on a later page), fetch it directly and prepend it so the
-  // preview + list can render it without the user paging through "Load more".
-  // Runs after `load` settles and re-checks after every items mutation; the
-  // presence guard + knownMissingRef keep it from looping or refetching.
   useEffect(() => {
     if (!activeType || !itemId || itemsLoading) return;
     if (knownMissingRef.current.has(itemId)) return;
@@ -326,11 +289,7 @@ export const CatalogWorkspace: React.FC = () => {
         const single = await getCatalogItem(activeType, itemId);
         if (cancelled || !single || single.id == null) return;
         const asItem = single as unknown as CatalogItem;
-        setItems((prev) =>
-          prev.some((it) => String(it.id) === String(asItem.id))
-            ? prev
-            : [asItem, ...prev],
-        );
+        setLinkedItem(asItem);
       } catch (e: any) {
         // 404/403 — the item is gone or not visible to this user. Record it so
         // we don't refetch on every subsequent list mutation.
@@ -343,7 +302,7 @@ export const CatalogWorkspace: React.FC = () => {
     };
   }, [activeType, itemId, items, itemsLoading]);
 
-  /** In-memory filters: 'mine' ownership + page-search + facet filters, over the loaded items. */
+  /** Apply ownership, search and facets before display pagination. */
   const filteredItems = useMemo(() => {
     let result = items;
     if (isMineScope) {
@@ -351,25 +310,23 @@ export const CatalogWorkspace: React.FC = () => {
         it.created_by && currentUserId ? it.created_by === currentUserId : false,
       );
     }
-    const q = pageSearchTerm.trim().toLowerCase();
-    if (q) {
-      result = result.filter((it) => {
-        const name = (it.name || it.slug || it.id || '').toString().toLowerCase();
-        const desc = it.description ? String(it.description).toLowerCase() : '';
-        return name.includes(q) || desc.includes(q);
-      });
-    }
+    result = result.filter((item) => matchesCatalogSearch(item, pageSearchTerm));
     result = applyFilters(result);
     return result;
   }, [items, isMineScope, pageSearchTerm, currentUserId, applyFilters]);
 
-  /** More pages available on the backend (only meaningful for non-'mine'). */
-  const hasMore = !isMineScope && items.length < total;
+  const hasMore = visibleLimit < filteredItems.length;
 
-  // Reset selection + tab + filters when the catalog type changes.
+  useEffect(() => {
+    setVisibleLimit(PAGE_SIZE);
+  }, [activeType, scopeFilter, serverFilterKey, catalogFilter.state, pageSearchTerm]);
+
+  const previousTypeRef = useRef(activeType);
   useEffect(() => {
     setTab(INFO);
-    clearAll();
+    if (previousTypeRef.current !== activeType) clearAll();
+    previousTypeRef.current = activeType;
+    setLinkedItem(null);
     knownMissingRef.current.clear();
   }, [activeType, clearAll]);
 
@@ -381,11 +338,11 @@ export const CatalogWorkspace: React.FC = () => {
       return;
     }
     let cancelled = false;
-    listCatalogItems('concept', { kind: 'anatomy_class', limit: 50 })
+    loadCatalogCollection('concept', { kind: 'anatomy_class' }, () => !cancelled)
       .then((resp) => {
-        if (cancelled) return;
+        if (cancelled || !resp) return;
         setAnatomyClasses(
-          resp.items.map((it) => ({
+          resp.map((it) => ({
             slug: String(it.slug),
             name: String(it.name ?? it.slug),
           })),
@@ -590,8 +547,9 @@ export const CatalogWorkspace: React.FC = () => {
   );
 
   const selectedItem = useMemo(
-    () => (itemId ? items.find((it) => String(it.id) === itemId) ?? null : null),
-    [items, itemId],
+    () => (itemId ? items.find((it) => String(it.id) === itemId)
+      ?? (linkedItem?.id === itemId ? linkedItem : null) : null),
+    [items, itemId, linkedItem],
   );
 
   // Keyboard shortcuts when an item is selected: e=edit, r=relations,
@@ -635,7 +593,7 @@ export const CatalogWorkspace: React.FC = () => {
       return (
         <CatalogItemInfo
           item={selectedItem}
-          total={total}
+          total={filteredItems.length}
           catalogType={active?.type}
           onJumpRelations={() => setTab(RELATIONS)}
           hideHeader
@@ -945,11 +903,18 @@ export const CatalogWorkspace: React.FC = () => {
             <div className="flex gap-4 flex-1 min-h-0">
               {/* List pane */}
               <div className="w-full lg:w-[42%] xl:w-[38%] shrink-0 flex flex-col min-h-0">
+                  {loadError && <div role="alert" className="p-3 text-red-600">
+                    {t('catalogs.load_error', 'Не удалось загрузить справочник целиком.')}
+                    <button type="button" onClick={() => void load()} className="ml-2 underline">
+                      {t('common.retry', 'Повторить')}
+                    </button>
+                  </div>}
                   <CatalogBrowser
                     key={active.type}
                     items={filteredItems}
                     loading={itemsLoading}
-                    total={isMineScope ? filteredItems.length : total}
+                    total={filteredItems.length}
+                    visibleLimit={visibleLimit}
                     viewMode={viewMode}
                     searchTerm={pageSearchTerm}
                     selectedItemId={itemId || undefined}
@@ -957,7 +922,6 @@ export const CatalogWorkspace: React.FC = () => {
                     domainRoute={domainRoute}
                     hasMore={hasMore}
                     onLoadMore={loadMore}
-                    loadingMore={loadingMore}
                     onScopeClick={(s) => setScopeFilter((prev) => (prev === s ? '' : s))}
                     onClassClick={(value) => {
                       // Concepts filter by kind; other catalogs by class. Both

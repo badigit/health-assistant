@@ -107,6 +107,7 @@ const Highlight: React.FC<{ text: string; term?: string }> = ({ text, term }) =>
 };
 
 interface CatalogBrowserProps {
+  visibleLimit?: number;
   items: CatalogItem[];
   loading: boolean;
   total: number;
@@ -141,6 +142,7 @@ const itemLabel = (item: CatalogItem): string =>
   String(item.name || item.slug || item.id || 'Unnamed');
 
 export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
+  visibleLimit,
   items,
   loading,
   total,
@@ -199,6 +201,11 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
       return itemLabel(a).localeCompare(itemLabel(b)) * dir;
     });
   }, [items, sortBy, sortDir]);
+
+  const renderLimit = visibleLimit === undefined ? sortedItems.length : Math.max(
+    visibleLimit, sortedItems.findIndex((item) => String(item.id) === selectedItemId) + 1,
+  );
+  const renderedItems = sortedItems.slice(0, renderLimit);
 
   /** Scope filter value this item's badge would set, or null if not clickable. */
   const scopeClickValue = (item: CatalogItem): string | null => {
@@ -272,9 +279,9 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
           })}
         </div>
         <span className="text-[11px] text-gray-400 shrink-0">
-          {items.length === total
+          {renderedItems.length === total
             ? `${total} ${t('catalogs.total', 'total')}`
-            : t('catalogs.count_of', { count: items.length, total, defaultValue: `${items.length} of ${total}` })}
+            : t('catalogs.count_of', { count: renderedItems.length, total, defaultValue: `${renderedItems.length} of ${total}` })}
         </span>
       </div>
 
@@ -354,7 +361,7 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
         </div>
       ) : viewMode === 'list' ? (
         <ul className="divide-y divide-gray-100 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700">
-          {sortedItems.map((item) => {
+          {renderedItems.map((item) => {
             const updated = item.updated_at
               ? formatDistanceToNow(new Date(item.updated_at), { addSuffix: true, locale })
               : null;
@@ -454,7 +461,7 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
         </ul>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-          {sortedItems.map((item) => {
+          {renderedItems.map((item) => {
             const updated = item.updated_at
               ? formatDistanceToNow(new Date(item.updated_at), { addSuffix: true, locale })
               : null;
@@ -552,7 +559,7 @@ export const CatalogBrowser: React.FC<CatalogBrowserProps> = ({
           })}
         </div>
       )}
-      {hasMore && !loading && sortedItems.length > 0 && (
+      {hasMore && !loading && (visibleLimit === undefined || renderedItems.length < sortedItems.length) && sortedItems.length > 0 && (
         <div className="flex justify-center py-4">
           <button
             onClick={onLoadMore}
