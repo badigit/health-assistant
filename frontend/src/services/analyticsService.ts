@@ -70,18 +70,22 @@ export async function getDashboardData(
     
     // Cache the dashboard data if we have patientId
     if (patientId && response.data) {
-       db.dashboardData.put({
+      try {
+       const cached = await db.dashboardData.where({ patient_id: patientId, period }).reverse().first();
+       await db.dashboardData.put({
+          ...cached,
           patient_id: patientId,
           period,
           data: response.data,
           updatedAt: Date.now()
        });
+      } catch { console.warn('Could not cache dashboard data'); }
     }
     
     return response.data;
   } catch (error) {
     if (!navigator.onLine && patientId) {
-      const cached = await db.dashboardData.where({ patient_id: patientId, period }).first();
+      const cached = await db.dashboardData.where({ patient_id: patientId, period }).reverse().first();
       if (cached) return cached.data;
     }
     throw error;
@@ -89,7 +93,7 @@ export async function getDashboardData(
 }
 
 export async function getCachedDashboardData(patientId: string, period: string) {
-  const cached = await db.dashboardData.where({ patient_id: patientId, period }).first();
+  const cached = await db.dashboardData.where({ patient_id: patientId, period }).reverse().first();
   return cached?.data || null;
 }
 
@@ -157,18 +161,22 @@ async function loadBiomarkerTrends(
     
     // Proactively cache if we are online and have patient context
     if (patientId && response.data && !biomarkerCodes) {
-       db.biomarkerTrends.put({
+      try {
+       const cached = await db.biomarkerTrends.where({ patient_id: patientId, period }).reverse().first();
+       await db.biomarkerTrends.put({
+          ...cached,
           patient_id: patientId,
           period,
           data: response.data,
           updatedAt: Date.now()
        });
+      } catch { console.warn('Could not cache biomarker trends'); }
     }
     
     return response.data;
   } catch (error) {
     if (!navigator.onLine && patientId && !biomarkerCodes) {
-      const cached = await db.biomarkerTrends.where({ patient_id: patientId, period }).first();
+      const cached = await db.biomarkerTrends.where({ patient_id: patientId, period }).reverse().first();
       if (cached) return cached.data;
     }
     throw error;
@@ -176,7 +184,7 @@ async function loadBiomarkerTrends(
 }
 
 export async function getCachedBiomarkerTrends(patientId: string, period: string) {
-  const cached = await db.biomarkerTrends.where({ patient_id: patientId, period }).first();
+  const cached = await db.biomarkerTrends.where({ patient_id: patientId, period }).reverse().first();
   return cached?.data || null;
 }
 
