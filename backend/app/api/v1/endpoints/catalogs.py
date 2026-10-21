@@ -259,7 +259,8 @@ async def list_catalog_items(
     include: Optional[str] = Query(
         None,
         description="Comma-separated extras: 'relations' annotates each item "
-        "with relation_count + relation_breakdown (one batched query).",
+        "with relation_count + relation_breakdown (one batched query); "
+        "'sources' includes linked source definitions in the biomarker catalog.",
     ),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
@@ -275,6 +276,8 @@ async def list_catalog_items(
     (per relation type) to each item — a single batched count query, no N+1.
     """
     descriptor = _require_descriptor(type)
+    extras = {x.strip().lower() for x in (include or "").split(",") if x.strip()}
+    options = {"include_sources": True} if type == "biomarker" and "sources" in extras else {}
     resp = await descriptor.service.list(
         db,
         current_user.tenant_id,
@@ -284,8 +287,8 @@ async def list_catalog_items(
         concept_class=class_,
         limit=limit,
         offset=offset,
+        **options,
     )
-    extras = {x.strip().lower() for x in (include or "").split(",") if x.strip()}
     if "relations" in extras:
         from app.services.catalog_graph_service import count_relations
 

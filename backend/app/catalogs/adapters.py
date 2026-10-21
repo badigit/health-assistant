@@ -27,7 +27,7 @@ from __future__ import annotations
 from typing import Any, Optional
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import String, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.catalogs.policy import (
@@ -670,8 +670,13 @@ class BiomarkerCatalogAdapter(BaseCatalogAdapter):
         concept_class: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
+        include_sources: bool = False,
     ) -> dict[str, Any]:
         filters = self._filters(tenant_id, search, scope=scope)
+        if not include_sources:
+            from app.services.biomarker_catalog_visibility import canonical_catalog_filter
+
+            filters.append(canonical_catalog_filter(tenant_id))
         if concept_class:
             ids = await self._resolve_class_concept_ids(db, concept_class)
             if not ids:
@@ -839,6 +844,7 @@ class BiomarkerCatalogAdapter(BaseCatalogAdapter):
                     BiomarkerDefinition.name.ilike(term),
                     BiomarkerDefinition.slug.ilike(term),
                     BiomarkerDefinition.code.ilike(term),
+                    BiomarkerDefinition.aliases.cast(String).ilike(term),
                 )
             )
         return flt

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Offer canonical biomarkers in catalog lists and search while retaining linked source definitions for ingestion and historical lookup; `include=sources` exposes them for maintenance.
 - Show the newest cached dashboard and trend snapshot immediately, updating its existing cache row without discarding successful network data on cache failures.
 - Coalesce identical in-flight trend requests and bound PostgreSQL parallelism for full-history wearable charts.
 - Link wearable readings to canonical biomarkers without rewriting source measurements; reconcile overlapping sources into local daily step and sleep totals.

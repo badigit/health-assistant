@@ -60,6 +60,7 @@ from app.models.fhir.allergy import AllergyCatalog
 from app.models.clinical_event import ClinicalEventType
 from app.models.concept_model import Concept
 from app.models.enums import ConceptKind, ConceptStatus
+from app.services.biomarker_catalog_visibility import CANONICAL_CATALOG_SQL
 
 
 DEFAULT_LIMIT = 20
@@ -187,6 +188,7 @@ _CATALOG_SPECS: Tuple[_CatalogSearchSpec, ...] = (
         alias_column="aliases",
         snippet_column="info",
         fts_expression=_BIOMARKER_FTS,
+        extra_where_sql="AND " + CANONICAL_CATALOG_SQL.replace("source.", "t."),
     ),
     _CatalogSearchSpec(
         type_name="medication",
