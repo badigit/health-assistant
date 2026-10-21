@@ -82,6 +82,7 @@ describe('adapter row/selection/route projection', () => {
     const obs: any = {
       id: 'o2',
       code: { text: 'Glucose' },
+        value_quantity: { value: 10, unit: 'mmol/L' },
       interpretation: { text: 'High', coding: [{ display: 'High' }] },
     };
     const row = observationAdapter.toRow(obs);

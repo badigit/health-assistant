@@ -30,6 +30,8 @@ class SourceIdentityTest(unittest.IsolatedAsyncioTestCase):
         first = await self.insert_id()
         self.assertIsNotNone(first)
         self.assertEqual(first, await self.insert_id())
+        self.assertEqual(first, await self.insert_id(
+            start_timestamp=datetime(2015, 1, 1, tzinfo=timezone.utc), source_name='Watch'))
         self.assertNotEqual(first, await self.insert_id(source_id="b" * 64))
         self.assertNotEqual(first, await self.insert_id(tenant="33333333-3333-4333-8333-333333333333"))
         self.assertNotEqual(first, await self.insert_id(patient_id=UUID("44444444-4444-4444-8444-444444444444")))
@@ -39,6 +41,12 @@ class SourceIdentityTest(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ValueError):
             TelemetryDataPoint(timestamp=datetime.now(timezone.utc), slug="heart-rate",
                                value=70, source_id="not-a-sha256")
+
+    def test_reversed_and_naive_intervals_rejected(self):
+        for start in [datetime(2015, 1, 2, tzinfo=timezone.utc), datetime(2015, 1, 1)]:
+            with self.assertRaises(ValueError):
+                TelemetryDataPoint(timestamp=datetime(2015, 1, 1, tzinfo=timezone.utc),
+                                   start_timestamp=start, slug='steps', value=10)
 
 
 if __name__ == "__main__":

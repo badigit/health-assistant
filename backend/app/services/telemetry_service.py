@@ -102,6 +102,8 @@ async def upload_telemetry_data(
                 "value": point.value,
                 "unit": getattr(point, "unit", None),
                 "patient_id": patient_uuid,
+                "start_timestamp": getattr(point, 'start_timestamp', None),
+                "source_name": getattr(point, 'source_name', None),
             }
         source_id = getattr(point, "source_id", None)
         if source_id:

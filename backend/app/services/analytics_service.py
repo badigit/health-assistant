@@ -12,7 +12,6 @@ from app.models.enums import BiomarkerValueType
 
 # FHIR models
 from app.models.fhir import Observation, Medication, DiagnosticReport
-from app.schemas.biomarker import is_safe_slug
 
 import re
 import logging
@@ -498,6 +497,7 @@ async def get_biomarker_trends(
     start_date: datetime = None,
     end_date: datetime = None,
     db: AsyncSession = None,
+    day_timezone: str = 'UTC',
 ) -> dict:
     if not db:
         return {"biomarkers": []}
@@ -512,7 +512,6 @@ async def get_biomarker_trends(
 
     if biomarker_codes:
         codes = [c.strip() for c in biomarker_codes.split(",")]
-        from sqlalchemy import or_
         import uuid
 
         # Resolve the requested codes/slugs against the definition catalog so we
@@ -550,8 +549,15 @@ async def get_biomarker_trends(
 
         if def_filters:
             def_filter = or_(*def_filters)
-            def_res = await db.execute(select(BiomarkerDefinition).where(def_filter))
-            for b in def_res.scalars().all():
+            visible = or_(BiomarkerDefinition.tenant_id.is_(None), BiomarkerDefinition.tenant_id == tenant_id)
+            def_res = await db.execute(select(BiomarkerDefinition).where(def_filter, visible))
+            matched = list(def_res.scalars().all())
+            canonical_slugs = {(b.meta_data or {}).get('canonical_slug') for b in matched} - {None}
+            if canonical_slugs:
+                linked = await db.execute(select(BiomarkerDefinition).where(
+                    BiomarkerDefinition.slug.in_(canonical_slugs), visible))
+                matched.extend(linked.scalars().all())
+            for b in matched:
                 matched_def_ids.append(b.id)
                 if b.name:
                     expanded_terms.append(b.name)
@@ -599,6 +605,7 @@ async def get_biomarker_trends(
     # Fetch Biomarker Definitions and their Groups
     bio_defs_query = (
         select(BiomarkerDefinition, Unit.symbol.label("unit_symbol"))
+        .where(or_(BiomarkerDefinition.tenant_id.is_(None), BiomarkerDefinition.tenant_id == tenant_id))
         .outerjoin(Unit, BiomarkerDefinition.preferred_unit_id == Unit.id)
         .options(selectinload(BiomarkerDefinition.reference_ranges))
         # allowed_states is needed to (a) detect STATE biomarkers and (b)
@@ -1028,7 +1035,6 @@ async def get_biomarker_trends(
             )
 
     # Telemetry Data Aggregation using TimescaleDB
-    from sqlalchemy import text
     from datetime import datetime, timedelta, timezone
 
     now = datetime.now(timezone.utc)
@@ -1048,7 +1054,8 @@ async def get_biomarker_trends(
 
     config = PERIOD_MAPPING.get(period, PERIOD_MAPPING["last-6-months"])
 
-    effective_start_date = start_date if start_date else (now - config["delta"])
+    effective_start_date = start_date if start_date else (
+        datetime(1900, 1, 1, tzinfo=now.tzinfo) if period == 'all-time' else now-config['delta'])
     effective_end_date = end_date if end_date else now
 
     bucket = aggregation if aggregation else config["bucket"]
@@ -1066,196 +1073,14 @@ async def get_biomarker_trends(
         else:
             bucket = "1 month"
 
-    telemetry_slugs = []
-    telemetry_defs = {}
-    for b in bio_map_def.values():
-        if getattr(b, "is_telemetry", False):
-            telemetry_slugs.append(b.slug)
-            telemetry_defs[b.slug] = b
-
-    if biomarker_codes:
-        codes = [c.strip() for c in biomarker_codes.split(",")]
-        import uuid
-
-        uuid_codes = []
-        text_codes = []
-        for c in codes:
-            try:
-                uuid.UUID(c)
-                uuid_codes.append(c)
-            except ValueError:
-                text_codes.append(c)
-
-        if uuid_codes:
-            # Resolve UUIDs to slugs for telemetry querying
-            def_res = await db.execute(
-                select(BiomarkerDefinition.slug).where(
-                    BiomarkerDefinition.id.in_([uuid.UUID(u) for u in uuid_codes])
-                )
-            )
-            text_codes.extend([s for s in def_res.scalars().all() if s])
-
-        telemetry_to_query = [
-            s
-            for s in telemetry_slugs
-            if any(c.lower() in s.lower() for c in text_codes)
-        ]
-    else:
-        telemetry_to_query = telemetry_slugs
-
-    for slug in telemetry_to_query:
-        # Defense-in-depth: even though ``slug`` is now a bind parameter
-        # (not an identifier/literal), refuse to query for obviously bogus
-        # slugs. Schema validation should have prevented them at write time,
-        # but rows may pre-date that guard or arrive via the AI pipeline /
-        # import path.
-        if not is_safe_slug(slug):
-            logger.warning(
-                "Skipping telemetry query for unsafe biomarker slug %r",
-                slug,
-            )
-            continue
-
-        # Long-format hypertable: pick the source table by requested bucket.
-        # When the bucket exactly matches a continuous aggregate's resolution,
-        # query the CAgg (pre-computed, fast on long horizons). Otherwise
-        # fall back to the raw hypertable with live ``time_bucket_gapfill``.
-        # The CAgg path covers every current and future telemetry biomarker
-        # via ``WHERE slug = :slug`` — no per-metric branching.
-        if bucket == "1 hour":
-            table_name = "telemetry_hourly"
-            time_col = "bucket"
-            avg_expr = "AVG(avg_val)"
-            max_expr = "MAX(max_val)"
-            min_expr = "MIN(min_val)"
-        elif bucket == "1 day":
-            table_name = "telemetry_daily"
-            time_col = "bucket"
-            avg_expr = "AVG(avg_val)"
-            max_expr = "MAX(max_val)"
-            min_expr = "MIN(min_val)"
-        elif bucket == "1 month":
-            table_name = "telemetry_monthly"
-            time_col = "bucket"
-            avg_expr = "AVG(avg_val)"
-            max_expr = "MAX(max_val)"
-            min_expr = "MIN(min_val)"
-        else:
-            # Raw hypertable — single-level aggregation (no double-wrapping).
-            table_name = "telemetry_data"
-            time_col = "timestamp"
-            avg_expr = "AVG(value)"
-            max_expr = "MAX(value)"
-            min_expr = "MIN(value)"
-
-        # Validate the bucket interval against a strict whitelist.
-        # The value is interpolated into INTERVAL '{bucket}' (PostgreSQL
-        # INTERVAL literals don't accept bind parameters). The default comes
-        # from PERIOD_MAPPING but an API caller can pass aggregation=...,
-        # so we must guard against arbitrary strings here.
-        safe_bucket = bucket if bucket in _ALLOWED_TELEMETRY_BUCKETS else "1 hour"
-
-        if patient_id:
-            table_name, time_col = "telemetry_data", "timestamp"
-            avg_expr, max_expr, min_expr = "AVG(value)", "MAX(value)", "MIN(value)"
-        patient_clause = "AND patient_id = CAST(:patient_id AS uuid)" if patient_id else ""
-
-        sql = f"""
-            SELECT
-                time_bucket_gapfill(
-                    INTERVAL '{safe_bucket}',
-                    {time_col},
-                    CAST(:start_date AS timestamptz),
-                    CAST(:end_date AS timestamptz)
-                ) AS bucket,
-                device_id,
-                {avg_expr} as avg_val,
-                {max_expr} as max_val,
-                {min_expr} as min_val
-            FROM {table_name}
-            WHERE tenant_id = CAST(:tenant_id AS uuid)
-              AND {time_col} >= CAST(:start_date AS timestamptz)
-              AND {time_col} <= CAST(:end_date AS timestamptz)
-              AND slug = :slug
-              {patient_clause}
-            GROUP BY 1, device_id
-            ORDER BY 1
-        """
-
-        try:
-            res = await db.execute(
-                text(sql),
-                {
-                    "tenant_id": tenant_id,
-                    "start_date": effective_start_date,
-                    "end_date": effective_end_date,
-                    "slug": slug,
-                    "patient_id": patient_id,
-                },
-            )
-            rows = res.all()
-
-            if rows:
-                if slug not in trends:
-                    trends[slug] = []
-
-                b_def = telemetry_defs[slug]
-                technical_category = b_def.category if b_def else "other"
-
-                clinical_groups = bio_to_groups.get(b_def.id) if b_def else None
-                if not clinical_groups:
-                    if b_def and b_def.category:
-                        clinical_groups = [
-                            b_def.category.replace("_", " ").replace("-", " ").title()
-                        ]
-                    else:
-                        clinical_groups = ["Telemetry"]
-
-                for row in rows:
-                    bucket_date = row.bucket
-                    device_id = row.device_id
-                    avg_val = row.avg_val
-                    max_val = row.max_val
-                    min_val = row.min_val
-
-                    if avg_val is None:
-                        continue  # Gapfill returned null
-
-                    trends[slug].append(
-                        {
-                            "date": bucket_date.isoformat() if bucket_date else "",
-                            "value": round(avg_val, 2),
-                            "max_value": round(max_val, 2),
-                            "min_value": round(min_val, 2),
-                            "unit": getattr(b_def, "preferred_unit_symbol", ""),
-                            "name": b_def.name if b_def else slug,
-                            "status": "Unknown",
-                            "biomarker_id": str(b_def.id) if b_def else None,
-                            "reference_range_min": b_def.reference_range_min
-                            if b_def
-                            else None,
-                            "reference_range_max": b_def.reference_range_max
-                            if b_def
-                            else None,
-                            "reference_range_text": f"{b_def.reference_range_min} - {b_def.reference_range_max}"
-                            if b_def and b_def.reference_range_min
-                            else "--",
-                            "source_type": "telemetry",
-                            "source_name": device_id or "IoT Device",
-                            "source_id": None,
-                            "source_category": "telemetry",
-                            "technical_category": technical_category,
-                            "clinical_groups": clinical_groups,
-                            "examination_id": None,
-                            "examination_name": None,
-                        }
-                    )
-        except Exception as e:
-            logger.error(
-                f"Failed to query telemetry data for '{slug}': {e}", exc_info=True
-            )
-            # If timescale is not perfectly configured or missing data, skip
-            pass
+    from app.services.telemetry_trends import read_telemetry_trends
+    telemetry = await read_telemetry_trends(
+        db, tenant_id, patient_id, list(bio_map_def.values()), biomarker_codes,
+        effective_start_date, effective_end_date,
+        bucket if bucket in _ALLOWED_TELEMETRY_BUCKETS else '1 hour', day_timezone, bio_to_groups,
+    )
+    for slug, points in telemetry.items():
+        trends.setdefault(slug, []).extend(points)
 
     for key in trends:
         trends[key].sort(key=lambda x: x["date"])

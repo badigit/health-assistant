@@ -632,6 +632,29 @@ async def update_biomarker(
     # Update fields
     update_data = biomarker_update.model_dump(exclude_unset=True)
 
+    if 'canonical_slug' in update_data:
+        canonical_slug = update_data.pop('canonical_slug')
+        multiplier = update_data.pop('canonical_unit_multiplier', None)
+        if canonical_slug is None or multiplier is None:
+            raise HTTPException(status_code=400, detail='Canonical link requires a slug and unit multiplier')
+        targets = (await db.execute(select(BiomarkerDefinition).where(
+            BiomarkerDefinition.slug == canonical_slug,
+            _tenant_scope(current_user.tenant_id),
+        ))).scalars().all()
+        if len(targets) != 1 or targets[0].id == db_biomarker.id:
+            raise HTTPException(status_code=400, detail='Canonical target must be one distinct visible definition')
+        target = targets[0]
+        if (db_biomarker.value_type != BiomarkerValueType.QUANTITY
+                or target.value_type != BiomarkerValueType.QUANTITY
+                or (target.meta_data or {}).get('canonical_slug')):
+            raise HTTPException(status_code=400, detail='Canonical links require numeric definitions without link chains')
+        db_biomarker.meta_data = dict(db_biomarker.meta_data or {}, canonical_slug=canonical_slug,
+                                     canonical_unit_multiplier=multiplier)
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(db_biomarker, 'meta_data')
+    elif 'canonical_unit_multiplier' in update_data:
+        raise HTTPException(status_code=400, detail='Unit multiplier requires a canonical link')
+
     # ``allowed_states`` is handled specially below (replace the join set),
     # and ``value_type`` is rejected by the Pydantic schema (cannot be flipped
     # without dropping + recreating the definition — would strand observations).

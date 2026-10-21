@@ -42,6 +42,8 @@ class TelemetryDataModel(Base, TenantMixin, AuditMixin, VersionedMixin):
     # pipeline. Optional — older/legacy rows may be NULL. No FK (TimescaleDB
     # hypertable limitation); same cleanup-job contract as ``tenant_id``.
     patient_id = Column(PG_UUID(as_uuid=True), nullable=True, index=True)
+    start_timestamp = Column(DateTime(timezone=True), nullable=True)
+    source_name = Column(String(255), nullable=True)
 
     __table_args__ = (
         # Hot path: tenant + metric + time range (analytics_service).
@@ -70,4 +72,6 @@ class TelemetryDataModel(Base, TenantMixin, AuditMixin, VersionedMixin):
             "value": self.value,
             "unit": self.unit,
             "patient_id": self.patient_id,
+            "start_timestamp": self.start_timestamp.isoformat() if self.start_timestamp else None,
+            "source_name": self.source_name,
         }

@@ -131,7 +131,8 @@ export async function getBiomarkerTrends(
         biomarker_codes: biomarkerCodes,
         period,
         patient_id: patientId,
-        aggregation: aggregation
+        aggregation: aggregation,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       }
     });
     

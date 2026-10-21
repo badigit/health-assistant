@@ -48,7 +48,7 @@ describe('computeStatus / getObservationStatus (single status algorithm)', () =>
 
   it('falls back to interpretation when no usable range', () => {
     expect(computeStatus(5, null, null, 'High')).toBe('High');
-    expect(computeStatus(undefined, 3, 7, 'Low')).toBe('Low');
+    expect(computeStatus(undefined, 3, 7, 'Low')).toBe('Unknown');
   });
 
   it('getObservationStatus reads raw Observation fields + coerces CodeableConcept interpretation', () => {
@@ -60,7 +60,7 @@ describe('computeStatus / getObservationStatus (single status algorithm)', () =>
     expect(getObservationStatus(inRange)).toBe('Normal');
     const over = { normalized_value: 9, biomarker_reference_range_max: 7 } as Observation;
     expect(getObservationStatus(over)).toBe('High');
-    const fallback = { interpretation: { text: 'Low' } } as unknown as Observation;
+    const fallback = { value_quantity: { value: 2 }, interpretation: { text: 'Low' } } as unknown as Observation;
     expect(getObservationStatus(fallback)).toBe('Low');
   });
 });

@@ -6,6 +6,7 @@ import { extractReferenceRange as extractRange } from '../utils/referenceRange';
 import { codeableText } from '../utils/textFormat';
 import { matchBiomarker } from '../utils/searchUtils';
 import biomarkerService from '../services/biomarkerService';
+import { latestBiomarkerPoint } from '../utils/biomarkerIdentity';
 
 export type Perspective = 'clinical' | 'technical' | 'examination';
 
@@ -150,7 +151,7 @@ export function useBiomarkers({ documents = [], trendsData, observations = [] }:
       Object.entries(trendsData).forEach(([key, points]) => {
         if (!points || points.length === 0) return;
         
-        const current = points[points.length - 1];
+        const current = latestBiomarkerPoint<any>(points)!;
         const rawRange = extractRange(current);
         const standardRange = {
            min: current.standard_range_min ?? current.reference_range_min ?? null,
@@ -179,11 +180,11 @@ export function useBiomarkers({ documents = [], trendsData, observations = [] }:
             standard: stdRef
           },
           relativeScore: current.relative_score || null,
-          interpretation: current.status || 'Normal',
+          interpretation: current.status || 'Unknown',
           source: {
             documentId: '',
             filename: current.examination_name || 'General Record',
-            date: current.date
+            date: current.latest_date || current.date
           },
           definitionId: current.biomarker_id || null,
           info: current.info || null,

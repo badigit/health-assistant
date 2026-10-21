@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Link wearable readings to canonical biomarkers without rewriting source measurements; reconcile overlapping sources into local daily step and sleep totals.
+- Resolve existing dashboard metric keys, show the actual latest reading and date, and use neutral statuses for missing or unassessed data.
 - Preserve the requested coding system and code when creating catalog definitions.
 - Make telemetry retries idempotent with optional source identities scoped to tenant, patient and device; validate explicit patient access before upload.
 - Filter telemetry charts by patient using attributed raw samples; do not label unassessed telemetry as normal.

@@ -1,5 +1,5 @@
 import re
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from uuid import UUID
 from typing import Optional, List
 from app.models.enums import CodingSystem, Gender, BiomarkerValueType
@@ -193,6 +193,8 @@ class BiomarkerCreate(BiomarkerBase):
 
 
 class BiomarkerUpdate(BaseModel):
+    canonical_slug: Optional[str] = Field(None, pattern=r'^[a-z0-9_-]{1,80}$')
+    canonical_unit_multiplier: Optional[float] = Field(None, gt=0, allow_inf_nan=False)
     name: Optional[str] = None
     category: Optional[str] = None
     class_concept_id: Optional[UUID] = None

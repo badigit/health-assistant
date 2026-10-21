@@ -148,8 +148,8 @@ describe('getFinalStatus', () => {
     expect(getFinalStatus(make(100, undefined, undefined, 'low') as any)).toBe('Low');
   });
 
-  it('returns Normal as default', () => {
-    expect(getFinalStatus(make(100) as any)).toBe('Normal');
+  it('returns Unknown without an assessment or reference range', () => {
+    expect(getFinalStatus(make(100) as any)).toBe('Unknown');
   });
 });
 

@@ -29,10 +29,10 @@ import {
 import { getBestIcon } from '../../components/dashboard';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { StickyToolbar } from '../../components/ui/StickyToolbar';
+import { resolveBiomarkerKey } from '../../utils/biomarkerIdentity';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
-const DEFAULT_BIOMARKERS = ['Blood Pressure', 'Heart Rate', 'Body Temp', 'Blood Sugar'];
 
 const DEFAULT_LAYOUT_CONFIG = {
   lg: [
@@ -93,10 +93,10 @@ const DEFAULT_LAYOUT_CONFIG = {
 };
 
 const DEFAULT_CARDS = [
-  { id: 'bp', type: 'biomarker', config: { biomarker: 'Systolic blood pressure', icon: 'Activity' } },
-  { id: 'hr', type: 'biomarker', config: { biomarker: 'Heart rate', icon: 'Heart' } },
-  { id: 'temp', type: 'biomarker', config: { biomarker: 'Body temperature', icon: 'Thermometer' } },
-  { id: 'sugar', type: 'biomarker', config: { biomarker: 'Glucose', icon: 'Droplets' } },
+  { id: 'bp', type: 'biomarker', config: { biomarker: 'systolic-bp', icon: 'Activity' } },
+  { id: 'hr', type: 'biomarker', config: { biomarker: 'heart-rate', icon: 'Heart' } },
+  { id: 'temp', type: 'biomarker', config: { biomarker: 'body-temperature', icon: 'Thermometer' } },
+  { id: 'sugar', type: 'biomarker', config: { biomarker: 'glucose-unspecified', icon: 'Droplets' } },
   { id: 'calendar', type: 'health_calendar', config: { viewType: 'timeline', timelineDays: 3, categories: ['medications', 'allergies', 'examinations'] } },
   { id: 'alerts', type: 'allergy_alerts', config: {} },
   { id: 'trends', type: 'trends', config: { biomarker: 'Total Cholesterol' } },
@@ -354,7 +354,6 @@ function Dashboard() {
         });
         
         const combined = [
-          ...DEFAULT_BIOMARKERS.map(name => ({ id: null, slug: name.toLowerCase().replace(/\s+/g, '-'), name })),
           ...uniqueBiomarkers
         ];
 
@@ -737,11 +736,7 @@ function Dashboard() {
 
     let cardData = undefined;
     if (cardBiomarker) {
-      const keys = Object.keys(cardsData);
-      const exactKey = keys.find(k => k === cardBiomarker);
-      const lowerKey = keys.find(k => k.toLowerCase() === cardBiomarker.toLowerCase());
-      const slugKey = keys.find(k => k === cardBiomarker.toLowerCase().replace(/\s+/g, '-'));
-      const keyToUse = exactKey || lowerKey || slugKey;
+      const keyToUse = resolveBiomarkerKey(cardBiomarker, cardsData);
       if (keyToUse) cardData = cardsData[keyToUse];
     }
 

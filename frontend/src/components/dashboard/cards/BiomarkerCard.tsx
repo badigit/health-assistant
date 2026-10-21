@@ -21,6 +21,7 @@ import { useBiomarkerPrecisionProfile } from '../../../hooks/useBiomarkerPrecisi
 import { useBiomarkerChange } from '../../../hooks/useBiomarkerChange';
 
 import { format, parseISO } from 'date-fns';
+import { latestBiomarkerPoint } from '../../../utils/biomarkerIdentity';
 
 export const BiomarkerCard = React.forwardRef((props: any, ref: any) => {
   const { t } = useTranslation();
@@ -34,12 +35,12 @@ export const BiomarkerCard = React.forwardRef((props: any, ref: any) => {
   
   // getBiomarkerTrends returns points sorted ASC, so latest is the last item
   const latestPoint = React.useMemo(() => {
-    if (!data || data.length === 0) return null;
-    return data[data.length - 1];
+    return latestBiomarkerPoint<any>(data);
   }, [data]);
 
-  const latestValue = latestPoint?.value ?? '--';
+  const latestValue = latestPoint?.latest_value ?? latestPoint?.value ?? '--';
   const unit = latestPoint?.unit ?? '';
+  const readingDate = latestPoint?.latest_date || latestPoint?.date;
   // STATE / non-numeric values: the sparkline (LineChart) is meaningless and
   // the unit suffix is wrong ("Positive bpm"). Render the value as-is and
   // skip the chart. ``useBiomarkerChange`` already short-circuits to null
@@ -51,12 +52,12 @@ export const BiomarkerCard = React.forwardRef((props: any, ref: any) => {
 
   // Calculate status using the central utility and reference ranges from the data point
   const status = React.useMemo(() => {
-    if (!latestPoint) return 'Normal';
+    if (!latestPoint) return 'NoData';
     
     // Construct a partial BiomarkerObservation for the utility
     const mockObs: any = {
-      value: { raw: latestPoint.value },
-      interpretation: latestPoint.status || 'Normal',
+      value: { raw: latestValue },
+      interpretation: latestPoint.status || 'Unknown',
       referenceRange: {
         min: latestPoint.reference_range_min,
         max: latestPoint.reference_range_max,
@@ -65,7 +66,7 @@ export const BiomarkerCard = React.forwardRef((props: any, ref: any) => {
     };
     
     return getFinalStatus(mockObs as BiomarkerObservation);
-  }, [latestPoint]);
+  }, [latestPoint, latestValue]);
 
   const info = latestPoint?.info;
   const targetId = latestPoint?.biomarker_id;
@@ -75,14 +76,15 @@ export const BiomarkerCard = React.forwardRef((props: any, ref: any) => {
   const displayBiomarkerName = React.useMemo(() => {
     if (!config.biomarker) return t('dashboard.config.select_biomarker');
     const found = availableBiomarkers?.find((b: any) => b.slug === config.biomarker || b.name === config.biomarker || b === config.biomarker);
-    return typeof found === 'object' ? found.name : (found || config.biomarker);
-  }, [config.biomarker, availableBiomarkers, t]);
+    return typeof found === 'object' ? found.name : (latestPoint?.name || found || config.biomarker);
+  }, [config.biomarker, availableBiomarkers, latestPoint, t]);
   
   const getIconColorClass = (status: string) => {
     const s = status.toLowerCase().trim();
     if (s.includes('high') || s === 'h' || s === 'abnormal') return 'text-red-500';
     if (s.includes('low') || s === 'l') return 'text-blue-500';
     if (s.includes('warning')) return 'text-yellow-500';
+    if (s === 'unknown' || s === 'nodata') return 'text-gray-400';
     return 'text-green-500';
   };
 
@@ -190,6 +192,8 @@ export const BiomarkerCard = React.forwardRef((props: any, ref: any) => {
               </>
             )}
           </div>
+          {readingDate && <p className="mt-2 text-xs text-gray-500">{format(parseISO(readingDate), 'dd.MM.yyyy HH:mm')}</p>}
+          {latestPoint?.aggregation === 'daily_total' && <p className="mt-1 text-xs text-gray-500">{t('biomarkers.daily_total', 'Итого за день')}{latestPoint.estimated ? ' ≈' : ''}</p>}
         </div>
 
         {!isEditMode && (

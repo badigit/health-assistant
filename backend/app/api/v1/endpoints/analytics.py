@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from sqlalchemy import select
@@ -61,10 +62,15 @@ async def get_trends_endpoint(
     period: str = Query("last-6-months"),
     aggregation: str = Query(None),
     patient_id: str = Query(None),
+    day_timezone: str = Query('UTC', alias='timezone'),
     current_user: TokenData = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Get biomarker trends"""
+    try:
+        ZoneInfo(day_timezone)
+    except (ZoneInfoNotFoundError, ValueError):
+        raise HTTPException(status_code=422, detail='Unknown timezone')
     if patient_id:
         await check_patient_access(patient_id, current_user, db)
     elif current_user.role == Role.USER.value:
@@ -75,6 +81,7 @@ async def get_trends_endpoint(
         biomarker_codes=biomarker_codes,
         period=period,
         aggregation=aggregation,
+        day_timezone=day_timezone,
         patient_id=patient_id,
         db=db,
     )

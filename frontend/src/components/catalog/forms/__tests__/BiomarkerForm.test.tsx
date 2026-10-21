@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 
 // Stub i18n — return the fallback string (the form uses t(key, fallback).
 vi.mock('react-i18next', () => ({
+  initReactI18next: { type: '3rdParty', init: () => {} },
   useTranslation: () => ({ t: (_k: string, fallback?: string) => fallback ?? 't-key' }),
 }));
 

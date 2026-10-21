@@ -22,6 +22,7 @@ export function computeStatus(
   max: number | null | undefined,
   interpretation: string | null | undefined,
 ): string {
+  if (rawVal === null || rawVal === undefined || rawVal === '' || rawVal === '--') return 'Unknown';
   const val = numericValue(rawVal);
   if (typeof rawVal === 'string' && /^(?:<=|>=|<|>|≤|≥)/.test(rawVal.trim())) return 'Unknown';
 
@@ -45,7 +46,7 @@ export function computeStatus(
   if (s.includes('abnormal')) return 'Abnormal';
   if (s.includes('normal') || s === 'n') return 'Normal';
 
-  return 'Normal';
+  return 'Unknown';
 }
 
 /**
@@ -53,7 +54,7 @@ export function computeStatus(
  * falling back to the extracted interpretation if range is missing.
  */
 export const getFinalStatus = (b: BiomarkerObservation): string => {
-  if (!b) return 'Normal';
+  if (!b) return 'Unknown';
   return computeStatus(b.value?.raw, b.referenceRange?.min, b.referenceRange?.max, b.interpretation);
 };
 
@@ -65,7 +66,7 @@ export const getFinalStatus = (b: BiomarkerObservation): string => {
  * CodeableConcept `interpretation` to a string.
  */
 export const getObservationStatus = (o: Observation | null | undefined): string => {
-  if (!o) return 'Normal';
+  if (!o) return 'Unknown';
   if (o.value_quantity?.comparator) return 'Unknown';
   const val = o.normalized_value ?? o.raw_value ?? o.value_quantity?.value;
   let min: number | null | undefined;
@@ -96,6 +97,7 @@ export const isAbnormal = (status: string): boolean => {
  */
 export const getStatusColorClass = (status: string): string => {
   const s = status.toLowerCase().trim();
+  if (!['normal', 'n', 'high', 'h', 'low', 'l', 'abnormal', 'warning'].includes(s)) return 'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700';
   if (s.includes('high') || s === 'h' || s === 'abnormal') return 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30';
   if (s.includes('low') || s === 'l') return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900/30';
   if (s.includes('warning')) return 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-900/30';
