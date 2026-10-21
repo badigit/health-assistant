@@ -93,7 +93,26 @@ export async function getCachedDashboardData(patientId: string, period: string) 
   return cached?.data || null;
 }
 
-export async function getBiomarkerTrends(
+const pendingTrends = new Map<string, ReturnType<typeof loadBiomarkerTrends>>();
+
+export function getBiomarkerTrends(
+  tenantId: string,
+  biomarkerCodes?: string,
+  period: string = 'last-6-months',
+  patientId?: string,
+  aggregation?: string,
+): ReturnType<typeof loadBiomarkerTrends> {
+  const key = JSON.stringify([tenantId, biomarkerCodes || '', period, patientId, aggregation,
+    Intl.DateTimeFormat().resolvedOptions().timeZone]);
+  const pending = pendingTrends.get(key);
+  if (pending) return pending;
+  const request = loadBiomarkerTrends(tenantId, biomarkerCodes, period, patientId, aggregation)
+    .finally(() => pendingTrends.delete(key));
+  pendingTrends.set(key, request);
+  return request;
+}
+
+async function loadBiomarkerTrends(
   _tenantId: string,
   biomarkerCodes?: string,
   period: string = 'last-6-months',

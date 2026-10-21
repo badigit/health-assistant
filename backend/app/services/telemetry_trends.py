@@ -43,6 +43,7 @@ async def read_telemetry_trends(db, tenant_id, patient_id, definitions, requeste
         selected.update({slug: spec for slug, spec in links.items() if CANONICAL_MODES.get(spec[0].slug) == 'sleep'})
     if not selected:
         return {}
+    await db.execute(text('SET LOCAL max_parallel_workers_per_gather=0'))
     output = defaultdict(list)
 
     def point(target, at, value, source=None, **extra):
