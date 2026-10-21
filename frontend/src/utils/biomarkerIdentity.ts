@@ -9,7 +9,11 @@ export function resolveBiomarkerKey(key: string, series: Record<string, any[]>):
 
 export function latestBiomarkerPoint<T extends { date?: string; latest_date?: string }>(points?: T[]): T | null {
   if (!points?.length) return null;
+  const timestamp = (point: T) => {
+    const parsed = Date.parse(point.latest_date || point.date || '');
+    return Number.isFinite(parsed) ? parsed : -Infinity;
+  };
   return points.reduce((latest, point) =>
-    Date.parse(point.latest_date || point.date || '') > Date.parse(latest.latest_date || latest.date || '')
+    timestamp(point) > timestamp(latest)
       ? point : latest);
 }

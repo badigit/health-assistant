@@ -13,6 +13,12 @@ describe('Canonical wearable identity and latest reading', () => {
     const wearable = { date: '2026-10-01T00:00:00Z', latest_date: '2026-10-20T10:00:00Z', value: 125 };
     expect(latestBiomarkerPoint([wearable, clinical])).toBe(wearable);
   });
+  it('does not let undated legacy results hide a dated measurement', () => {
+    const legacy = { date: '', value: null };
+    const latest = { date: '2026-10-01T00:00:00Z', latest_date: '2026-10-02T13:00:00Z', value: 134 };
+    expect(latestBiomarkerPoint([legacy, latest])).toBe(latest);
+    expect(latestBiomarkerPoint([latest, legacy])).toBe(latest);
+  });
   it('does not call missing data normal even with a stale interpretation', () => {
     expect(computeStatus(undefined, 60, 100, 'Normal')).toBe('Unknown');
     expect(computeStatus('--', undefined, undefined, 'Normal')).toBe('Unknown');
