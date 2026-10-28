@@ -1,8 +1,20 @@
 name: Docker Build and Publish
 
 on:
+  push:
+    branches: [ "main" ]
+    # Publish semver tags as releases.
+    tags: [ 'v*.*.*' ]
+  # Run the test suite on PRs (e.g. Dependabot) — publish jobs are gated to
+  # push/tag events below, so PR runs build nothing and push nothing.
+  pull_request:
+    branches: [ "main" ]
+  # Allow manual trigger from the GitHub Actions UI
   workflow_dispatch:
 
+# One publish pipeline per ref at a time; a newer push cancels a stale run on
+# the same ref. Tag builds (refs/tags/*) form their own groups, so release
+# publishes never cancel each other or a main build.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
